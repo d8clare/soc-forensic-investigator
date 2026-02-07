@@ -27,6 +27,35 @@ class ForensicTimeline:
         if not events:
             return self
 
+        # Event ID descriptions for common security events
+        event_descriptions = {
+            1102: "Security audit log was cleared",
+            104: "System log was cleared",
+            4624: "Successful logon",
+            4625: "Failed logon attempt",
+            4634: "Logoff",
+            4648: "Explicit credential logon",
+            4672: "Special privileges assigned",
+            4688: "New process created",
+            4698: "Scheduled task created",
+            4699: "Scheduled task deleted",
+            4700: "Scheduled task enabled",
+            4720: "User account created",
+            4722: "User account enabled",
+            4724: "Password reset attempt",
+            4725: "User account disabled",
+            4726: "User account deleted",
+            4728: "Member added to security group",
+            4732: "Member added to local group",
+            4738: "User account changed",
+            4776: "Credential validation",
+            7034: "Service crashed",
+            7035: "Service control sent",
+            7036: "Service state changed",
+            7040: "Service start type changed",
+            7045: "Service installed",
+        }
+
         for e in events:
             timestamp = e.get("Time")
             if not timestamp:
@@ -34,7 +63,25 @@ class ForensicTimeline:
 
             event_id = e.get('Id', 0)
             level = e.get('LevelDisplayName', 'Info')
-            msg = str(e.get('Message', ''))[:200]
+            log_name = e.get('LogName', '')
+            provider = e.get('ProviderName', '')
+
+            # Get clean description
+            raw_msg = str(e.get('Message', ''))
+
+            # Use predefined description if available
+            if event_id in event_descriptions:
+                description = event_descriptions[event_id]
+            elif raw_msg and not raw_msg.startswith('[Error]') and 'Id = {' not in raw_msg:
+                # Clean up the message - take first line only
+                first_line = raw_msg.split('\n')[0].strip()
+                # Remove common noise prefixes
+                if first_line.startswith('The '):
+                    first_line = first_line[4:]
+                description = first_line[:150]
+            else:
+                # Fallback to log name and provider
+                description = f"{log_name}: {provider}" if provider else log_name or f"Event {event_id}"
 
             # Determine if risky
             is_risky = event_id in [1102, 104, 4720, 7045, 4698, 4624, 4625]
@@ -43,7 +90,7 @@ class ForensicTimeline:
                 "Timestamp": timestamp,
                 "Type": "Event Log",
                 "Source": f"Event {event_id}",
-                "Description": f"[{level}] {msg}",
+                "Description": f"[{level}] {description}",
                 "Risky": is_risky
             })
 

@@ -80,10 +80,8 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     for f in sorted_findings:
         ev = f.evidence or {}
 
-        # Get path/location
+        # Get path/location (show full path)
         path = ev.get('path') or ev.get('exe') or ev.get('remote_addr') or ev.get('domain') or ''
-        if len(str(path)) > 60:
-            path = "..." + str(path)[-57:]
 
         # Get artifact name
         artifact = ev.get('name') or ev.get('filename') or ev.get('event_id') or ''
@@ -113,7 +111,7 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
             "Severity": st.column_config.TextColumn("Severity", width="small"),
             "Category": st.column_config.TextColumn("Category", width="medium"),
             "Description": st.column_config.TextColumn("Description", width="large"),
-            "Path": st.column_config.TextColumn("Path", width="medium"),
+            "Path": st.column_config.TextColumn("Path", width="large"),
             "Source": st.column_config.TextColumn("Source", width="small"),
             "MITRE": st.column_config.TextColumn("MITRE", width="small"),
         }
