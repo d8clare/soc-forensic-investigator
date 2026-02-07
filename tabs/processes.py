@@ -756,7 +756,7 @@ def render_deep_dive(df_proc: pd.DataFrame, df_proc_sorted: pd.DataFrame, eviden
                 "Name": child.get('name', ''),
                 "PID": child.get('pid', ''),
                 "Risk": child.get('Risk Score', 0),
-                "Command": str(child.get('cmdline', ''))[:60]
+                "Command": str(child.get('cmdline', ''))
             })
         st.dataframe(pd.DataFrame(child_data), width="stretch", hide_index=True)
         st.caption("Select a child process from the dropdown above to investigate.")
@@ -902,7 +902,7 @@ def render_suspicious_activity(df_proc: pd.DataFrame):
                     "Child": proc.get('name'),
                     "Child PID": proc.get('pid'),
                     "Risk": chain_data["risk"],
-                    "Command": str(proc.get('cmdline', ''))[:100]
+                    "Command": str(proc.get('cmdline', ''))
                 })
 
     if suspicious_chains:
@@ -923,7 +923,7 @@ def render_suspicious_activity(df_proc: pd.DataFrame):
                 "Name": proc.get('name'),
                 "PID": proc.get('pid'),
                 "User": proc.get('username'),
-                "Command": str(proc.get('cmdline', ''))[:150],
+                "Command": str(proc.get('cmdline', '')),
                 "Parent": proc.get('parent_name')
             })
 

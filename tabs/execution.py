@@ -655,7 +655,7 @@ def render_powershell_tab(evidence_folder):
                 risk = "🟠 Suspicious"
             suspicious_commands.append({
                 'Line': i + 1,
-                'Command': line[:100],
+                'Command': line,
                 'Risk': risk,
                 'Findings': ', '.join(findings)
             })

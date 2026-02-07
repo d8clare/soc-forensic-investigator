@@ -267,9 +267,16 @@ def render_hashes_tab(df: pd.DataFrame, stats: dict):
 
 def render_verify_tab(df: pd.DataFrame):
     """Render the hash verification subtab."""
-    hash_input = st.text_input("SHA256 hash to verify:", placeholder="Enter hash...", key="verify_hash")
+    # Use session state to store verification results
+    if 'verify_result' not in st.session_state:
+        st.session_state.verify_result = None
 
-    if hash_input:
+    # Form prevents page reload on Enter
+    with st.form(key="verify_hash_form"):
+        hash_input = st.text_input("SHA256 hash to verify:", placeholder="Enter 64-character SHA256 hash...")
+        submit_btn = st.form_submit_button("Verify Hash")
+
+    if submit_btn and hash_input:
         hash_clean = hash_input.strip().lower()
         if not validate_sha256(hash_clean):
             st.error("Invalid SHA256 format (must be 64 hex characters)")
@@ -278,9 +285,11 @@ def render_verify_tab(df: pd.DataFrame):
             if not matches.empty:
                 for idx, row in matches.iterrows():
                     path = row.get('Path', 'Unknown')
-                    st.success(f"Found: {get_filename(path)} - {path}")
+                    st.success(f"Found: {get_filename(path)}")
+                    st.code(path, language=None)
             else:
-                st.warning(f"Not found. [Check VirusTotal](https://www.virustotal.com/gui/file/{hash_clean})")
+                st.warning("Hash not found in collected evidence.")
+                st.markdown(f"[Check on VirusTotal](https://www.virustotal.com/gui/file/{hash_clean})")
 
 
 def render_manifest_tab(df: pd.DataFrame, evidence_folder: str):
