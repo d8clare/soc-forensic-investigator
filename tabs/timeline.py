@@ -91,10 +91,10 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     downloads = load_json(evidence_folder, "browser_downloads.json")
 
     tasks = load_json(evidence_folder, "scheduled_tasks.json")
-    services = load_json(evidence_folder, "services.json")
+    services = load_json(evidence_folder, "services_list.json")
     wmi = load_json(evidence_folder, "wmi_persistence.json")
     startup = load_json(evidence_folder, "startup_files.json")
-    registry = load_json(evidence_folder, "registry_persistence.json")
+    registry = load_json(evidence_folder, "registry_autoruns.json")
 
     software = load_json(evidence_folder, "installed_software.json")
     cookies = load_json(evidence_folder, "browser_cookies.json")
