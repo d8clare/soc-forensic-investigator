@@ -1,0 +1,177 @@
+{
+  "version": "1.0.0",
+  "description": "Whitelist for known-good patterns to reduce false positives",
+
+  "processes": {
+    "known_good_lolbins": {
+      "description": "Legitimate LOLBin usage patterns",
+      "patterns": [
+        {"process": "msiexec.exe", "parent": "services.exe", "reason": "Windows Installer service"},
+        {"process": "msiexec.exe", "parent": "svchost.exe", "reason": "Windows Update"},
+        {"process": "regsvr32.exe", "parent": "msiexec.exe", "reason": "Software installation"},
+        {"process": "rundll32.exe", "parent": "explorer.exe", "cmdline_not": ["javascript:", "http://", "vbscript:"], "reason": "Shell extension"},
+        {"process": "certutil.exe", "parent": "msiexec.exe", "reason": "Certificate installation"},
+        {"process": "bitsadmin.exe", "parent": "svchost.exe", "reason": "Windows Update BITS"},
+        {"process": "wmic.exe", "parent": "sccm", "reason": "SCCM management"},
+        {"process": "mshta.exe", "cmdline_contains": ["res://"], "reason": "Built-in Windows dialogs"}
+      ]
+    },
+    "known_good_discovery": {
+      "description": "Legitimate admin/discovery tools",
+      "patterns": [
+        {"process": "ipconfig.exe", "parent": "cmd.exe", "parent_parent": "explorer.exe", "reason": "Manual admin command"},
+        {"process": "systeminfo.exe", "parent": "sccm", "reason": "SCCM inventory"},
+        {"process": "whoami.exe", "parent": "powershell.exe", "parent_cmdline": ["profile.ps1"], "reason": "PowerShell profile"}
+      ]
+    },
+    "known_good_encoded": {
+      "description": "Legitimate encoded PowerShell usage",
+      "patterns": [
+        {"cmdline_contains": ["-EncodedCommand"], "parent": "ConfigMgr", "reason": "SCCM deployment"},
+        {"cmdline_contains": ["-EncodedCommand"], "cmdline_also": ["Microsoft.PowerShell.Core"], "reason": "Windows built-in"},
+        {"cmdline_contains": ["-enc"], "path": "\\Windows\\CCM\\", "reason": "SCCM client"}
+      ]
+    },
+    "system_processes": {
+      "description": "Windows system processes that should not be flagged",
+      "paths": [
+        "C:\\Windows\\System32\\",
+        "C:\\Windows\\SysWOW64\\",
+        "C:\\Windows\\WinSxS\\",
+        "C:\\Program Files\\Windows Defender\\",
+        "C:\\ProgramData\\Microsoft\\Windows Defender\\"
+      ],
+      "signed_only": true
+    }
+  },
+
+  "network": {
+    "known_good_ports": {
+      "description": "Ports that are legitimate for specific processes",
+      "patterns": [
+        {"port": 3389, "process": "mstsc.exe", "reason": "RDP client"},
+        {"port": 3389, "process": "TermService", "reason": "RDP service"},
+        {"port": 22, "process": "ssh.exe", "reason": "OpenSSH client"},
+        {"port": 22, "process": "sshd.exe", "reason": "OpenSSH server"},
+        {"port": 5985, "process": "wsmprovhost.exe", "reason": "WinRM"},
+        {"port": 5986, "process": "wsmprovhost.exe", "reason": "WinRM over HTTPS"},
+        {"port": 445, "process": "System", "reason": "SMB"},
+        {"port": 135, "process": "svchost.exe", "reason": "RPC"}
+      ]
+    },
+    "internal_ranges": {
+      "description": "Internal IP ranges (lower risk for lateral movement)",
+      "ranges": [
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16"
+      ],
+      "score_modifier": 0.5
+    }
+  },
+
+  "services": {
+    "known_good_user_paths": {
+      "description": "Legitimate services running from non-system paths",
+      "patterns": [
+        {"path_contains": "\\Program Files\\", "signed": true, "reason": "Installed software"},
+        {"path_contains": "\\Program Files (x86)\\", "signed": true, "reason": "Installed software"},
+        {"name_contains": "CrowdStrike", "reason": "EDR agent"},
+        {"name_contains": "Carbon Black", "reason": "EDR agent"},
+        {"name_contains": "Defender", "reason": "Windows Defender"},
+        {"name_contains": "SentinelOne", "reason": "EDR agent"},
+        {"name_contains": "Sophos", "reason": "Antivirus"},
+        {"name_contains": "McAfee", "reason": "Antivirus"},
+        {"name_contains": "Symantec", "reason": "Antivirus"},
+        {"name_contains": "ESET", "reason": "Antivirus"},
+        {"name_contains": "Kaspersky", "reason": "Antivirus"}
+      ]
+    }
+  },
+
+  "scheduled_tasks": {
+    "known_good_tasks": {
+      "description": "Legitimate scheduled tasks",
+      "patterns": [
+        {"path_starts": "\\Microsoft\\", "reason": "Microsoft built-in tasks"},
+        {"path_starts": "\\Apple\\", "reason": "Apple software updates"},
+        {"path_starts": "\\Google\\", "reason": "Google software updates"},
+        {"path_starts": "\\Adobe\\", "reason": "Adobe software updates"},
+        {"author": "Microsoft Corporation", "reason": "Microsoft tasks"},
+        {"name_contains": "OneDrive", "reason": "OneDrive sync"},
+        {"name_contains": "Defender", "reason": "Windows Defender"}
+      ]
+    }
+  },
+
+  "registry": {
+    "known_good_autoruns": {
+      "description": "Legitimate autorun entries",
+      "patterns": [
+        {"value_contains": "\\Microsoft\\", "signed": true, "reason": "Microsoft software"},
+        {"value_contains": "SecurityHealth", "reason": "Windows Security"},
+        {"value_contains": "OneDrive", "reason": "OneDrive"},
+        {"value_contains": "\\Program Files\\", "signed": true, "reason": "Installed software"}
+      ]
+    }
+  },
+
+  "dns": {
+    "known_good_domains": {
+      "description": "Domains that should not be flagged",
+      "patterns": [
+        "microsoft.com",
+        "windows.com",
+        "windowsupdate.com",
+        "office.com",
+        "office365.com",
+        "live.com",
+        "azure.com",
+        "msftconnecttest.com",
+        "google.com",
+        "googleapis.com",
+        "gstatic.com",
+        "apple.com",
+        "icloud.com",
+        "adobe.com",
+        "akamai.net",
+        "cloudflare.com",
+        "amazonaws.com"
+      ]
+    },
+    "enterprise_services": {
+      "description": "Common enterprise services",
+      "patterns": [
+        "okta.com",
+        "auth0.com",
+        "duo.com",
+        "zoom.us",
+        "teams.microsoft.com",
+        "slack.com",
+        "salesforce.com",
+        "servicenow.com"
+      ]
+    }
+  },
+
+  "files": {
+    "known_good_executables": {
+      "description": "Legitimate executables in user folders",
+      "patterns": [
+        {"path_contains": "\\OneDrive\\", "signed": true, "reason": "OneDrive sync"},
+        {"path_contains": "\\Dropbox\\", "signed": true, "reason": "Dropbox sync"},
+        {"path_contains": "\\Google Drive\\", "signed": true, "reason": "Google Drive sync"},
+        {"publisher": "Microsoft Corporation", "reason": "Microsoft software"},
+        {"publisher": "Google LLC", "reason": "Google software"},
+        {"publisher": "Apple Inc.", "reason": "Apple software"}
+      ]
+    }
+  },
+
+  "global_settings": {
+    "score_reduction_matched": 0.8,
+    "score_reduction_context": 0.5,
+    "skip_finding_if_whitelisted": false,
+    "add_whitelist_note": true
+  }
+}

@@ -1,0 +1,228 @@
+title: Suspicious Encoded PowerShell Command
+id: f26c6093-6f14-4b12-800f-0fcb46f5ffd0
+status: stable
+description: Detects PowerShell with encoded commands, commonly used by malware
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        CommandLine|contains:
+            - '-enc '
+            - '-encodedcommand'
+            - '-EncodedCommand'
+            - 'FromBase64String'
+    condition: selection
+level: high
+tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.defense_evasion
+    - attack.t1027
+---
+title: Mimikatz Execution
+id: a642964e-bead-4bed-8910-1bb4f93b5f20
+status: stable
+description: Detects Mimikatz credential dumping tool execution
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_name:
+        Image|endswith:
+            - '\mimikatz.exe'
+            - '\mimi.exe'
+    selection_cmdline:
+        CommandLine|contains:
+            - 'sekurlsa'
+            - 'kerberos::list'
+            - 'lsadump'
+            - 'privilege::debug'
+    condition: selection_name or selection_cmdline
+level: critical
+tags:
+    - attack.credential_access
+    - attack.t1003
+---
+title: PsExec Execution
+id: 730fc21b-eaff-474b-ad23-90fd265d4988
+status: stable
+description: Detects PsExec remote execution tool
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|endswith:
+            - '\psexec.exe'
+            - '\psexec64.exe'
+            - '\paexec.exe'
+    condition: selection
+level: high
+tags:
+    - attack.lateral_movement
+    - attack.t1021.002
+    - attack.t1569.002
+---
+title: LOLBAS Certutil Download
+id: 19b08b1c-861d-4e75-a1ef-ea0c1baf202b
+status: stable
+description: Detects certutil being used to download files
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|endswith: '\certutil.exe'
+        CommandLine|contains:
+            - 'urlcache'
+            - '-split'
+            - 'http'
+    condition: selection
+level: high
+tags:
+    - attack.command_and_control
+    - attack.t1105
+    - attack.defense_evasion
+    - attack.t1218
+---
+title: Suspicious WMIC Execution
+id: 526be59f-a573-4eea-b5f7-f0973207634d
+status: stable
+description: Detects WMIC used for reconnaissance or execution
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|endswith: '\wmic.exe'
+        CommandLine|contains:
+            - 'process call create'
+            - 'shadowcopy delete'
+            - '/node:'
+    condition: selection
+level: high
+tags:
+    - attack.execution
+    - attack.t1047
+---
+title: Office Application Spawning Shell
+id: 438025f9-5856-4663-83f7-52f878a70a50
+status: stable
+description: Detects Office applications spawning command shells
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_parent:
+        ParentImage|endswith:
+            - '\winword.exe'
+            - '\excel.exe'
+            - '\powerpnt.exe'
+            - '\outlook.exe'
+            - '\onenote.exe'
+    selection_child:
+        Image|endswith:
+            - '\cmd.exe'
+            - '\powershell.exe'
+            - '\wscript.exe'
+            - '\cscript.exe'
+            - '\mshta.exe'
+    condition: selection_parent and selection_child
+level: critical
+tags:
+    - attack.execution
+    - attack.t1204.002
+    - attack.initial_access
+    - attack.t1566.001
+---
+title: Shadow Copy Deletion
+id: c947b146-0571-4c11-9f28-9c7d0c65d60a
+status: stable
+description: Detects deletion of shadow copies, often used by ransomware
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_vssadmin:
+        Image|endswith: '\vssadmin.exe'
+        CommandLine|contains:
+            - 'delete shadows'
+            - 'resize shadowstorage'
+    selection_wmic:
+        Image|endswith: '\wmic.exe'
+        CommandLine|contains: 'shadowcopy delete'
+    selection_powershell:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains: 'Win32_ShadowCopy'
+    condition: selection_vssadmin or selection_wmic or selection_powershell
+level: critical
+tags:
+    - attack.impact
+    - attack.t1490
+---
+title: Execution from Suspicious Location
+id: 3dfd06d2-eaf4-4532-9555-68aca59f57c4
+status: stable
+description: Detects execution from temp, public, or recycle bin folders
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|contains:
+            - '\Temp\'
+            - '\Tmp\'
+            - '\Users\Public\'
+            - '\$Recycle.Bin\'
+            - '\ProgramData\'
+    filter:
+        Image|contains:
+            - '\Windows\Temp\mpam'
+            - 'chocolatey'
+    condition: selection and not filter
+level: medium
+tags:
+    - attack.execution
+    - attack.defense_evasion
+    - attack.t1204
+---
+title: Potential Reverse Shell
+id: b50d3fd9-e5ad-4a67-9e3e-9e28e2cb5127
+status: stable
+description: Detects potential reverse shell connections via PowerShell or ncat
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_ps:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+        CommandLine|contains:
+            - 'TCPClient'
+            - 'Net.Sockets'
+            - 'IO.StreamReader'
+    selection_ncat:
+        Image|endswith:
+            - '\nc.exe'
+            - '\ncat.exe'
+            - '\netcat.exe'
+        CommandLine|contains: '-e'
+    condition: selection_ps or selection_ncat
+level: critical
+tags:
+    - attack.execution
+    - attack.command_and_control
+    - attack.t1059.001

@@ -1,0 +1,651 @@
+{
+  "version": "2.1.0",
+  "scoring_config": {
+    "max_global_score": 100,
+    "normalization_method": "weighted_cap",
+    "category_weights": {
+      "credential_access": 1.5,
+      "ransomware": 1.5,
+      "malicious_process": 1.3,
+      "lateral_movement": 1.2,
+      "defense_evasion": 1.2,
+      "persistence": 1.1,
+      "discovery": 0.8,
+      "default": 1.0
+    },
+    "category_max_scores": {
+      "credential_access": 30,
+      "ransomware": 30,
+      "malicious_process": 25,
+      "lateral_movement": 20,
+      "defense_evasion": 20,
+      "persistence": 20,
+      "network": 15,
+      "file": 15,
+      "dns": 10,
+      "registry": 15,
+      "discovery": 10,
+      "default": 15
+    },
+    "severity_thresholds": {
+      "critical": 70,
+      "high": 50,
+      "medium": 25,
+      "low": 10
+    },
+    "deduplication": {
+      "enabled": true,
+      "key_fields": ["category", "source", "description"]
+    }
+  },
+  "process_rules": {
+    "malicious_keywords": {
+      "patterns": ["mimikatz", "ncat", "psexec", "cobalt", "metasploit", "meterpreter", "beacon", "empire", "lazagne", "rubeus", "sharphound", "bloodhound", "covenant", "sliver", "havoc", "brute", "hashcat", "john"],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1003", "T1059"]
+    },
+    "encoded_commands": {
+      "patterns": ["-enc", "-encodedcommand", "frombase64", "iex(", "invoke-expression", "downloadstring", "net.webclient", "bitstransfer", "invoke-webrequest", "certutil -decode", "certutil -urlcache"],
+      "score": 45,
+      "severity": "high",
+      "mitre_techniques": ["T1059.001", "T1027"]
+    },
+    "office_spawn_shell": {
+      "parent_patterns": ["winword", "excel", "outlook", "powerpnt", "onenote", "msaccess", "mspub"],
+      "child_patterns": ["cmd", "powershell", "pwsh", "wscript", "cscript", "mshta", "regsvr32", "rundll32", "certutil"],
+      "score": 60,
+      "severity": "critical",
+      "mitre_techniques": ["T1566.001", "T1204.002"]
+    },
+    "unsigned_system_binaries": {
+      "path_patterns": ["system32", "windows", "syswow64"],
+      "score": 40,
+      "severity": "high",
+      "mitre_techniques": ["T1036", "T1574"]
+    },
+    "lolbins": {
+      "patterns": ["mshta", "regsvr32", "rundll32", "certutil", "bitsadmin", "wmic", "msiexec", "cmstp", "installutil", "regasm", "regsvcs", "msbuild", "odbcconf", "ieexec", "pcalua", "forfiles", "scriptrunner"],
+      "score": 35,
+      "severity": "high",
+      "mitre_techniques": ["T1218", "T1105"]
+    },
+    "credential_access": {
+      "patterns": ["sekurlsa", "lsadump", "dcsync", "kerberos::", "procdump", "comsvcs.dll", "minidump", "sqldumper", "createdump", "ntdsutil"],
+      "score": 60,
+      "severity": "critical",
+      "mitre_techniques": ["T1003.001", "T1003.002", "T1003.006"]
+    },
+    "lsass_access": {
+      "target_processes": ["lsass.exe"],
+      "suspicious_accessors": ["procdump", "sqldumper", "createdump", "taskmgr", "processhacker"],
+      "score": 65,
+      "severity": "critical",
+      "mitre_techniques": ["T1003.001"]
+    },
+    "amsi_bypass": {
+      "patterns": ["amsicontext", "amsiinitfailed", "amsiutils", "amsi.dll", "set-mppreference -disablerealtimemonitoring", "add-mppreference -exclusionpath"],
+      "score": 55,
+      "severity": "critical",
+      "mitre_techniques": ["T1562.001"]
+    },
+    "etw_tampering": {
+      "patterns": ["etweventwrite", "nttracevent", "etwprovider", "logman stop", "wevtutil cl", "wevtutil sl"],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1562.006"]
+    },
+    "defender_evasion": {
+      "patterns": ["set-mppreference", "add-mppreference", "-disablerealtimemonitoring", "-disablebehaviormonitoring", "-disableioavprotection", "-disablescriptscanning", "sc stop windefend", "sc delete windefend"],
+      "score": 55,
+      "severity": "critical",
+      "mitre_techniques": ["T1562.001"]
+    },
+    "ransomware_indicators": {
+      "patterns": ["vssadmin delete shadows", "wmic shadowcopy delete", "bcdedit /set", "wbadmin delete catalog", "cipher /w", "recover -all"],
+      "score": 70,
+      "severity": "critical",
+      "mitre_techniques": ["T1490", "T1486"]
+    },
+    "lateral_movement": {
+      "patterns": ["enter-pssession", "invoke-command", "new-pssession", "winrs", "wmic /node:", "psexec \\\\", "sc \\\\", "schtasks /create /s"],
+      "score": 50,
+      "severity": "high",
+      "mitre_techniques": ["T1021.001", "T1021.006", "T1047"]
+    },
+    "discovery_commands": {
+      "patterns": ["net user /domain", "net group /domain", "nltest /dclist", "dsquery", "get-aduser", "get-adcomputer", "get-adgroup", "whoami /all", "systeminfo", "ipconfig /all", "netstat -ano", "arp -a", "route print"],
+      "score": 25,
+      "severity": "medium",
+      "mitre_techniques": ["T1087", "T1082", "T1016", "T1049"]
+    },
+    "process_injection": {
+      "patterns": ["virtualalloc", "writeprocessmemory", "createremotethread", "ntcreatethreadex", "queueuserapc", "setthreadcontext", "reflectiveloader"],
+      "score": 55,
+      "severity": "critical",
+      "mitre_techniques": ["T1055", "T1055.001", "T1055.003"]
+    },
+    "uac_bypass": {
+      "patterns": ["fodhelper", "computerdefaults", "sdclt", "eventvwr", "silentcleanup", "mock trusted directory"],
+      "score": 50,
+      "severity": "high",
+      "mitre_techniques": ["T1548.002"]
+    }
+  },
+  "network_rules": {
+    "suspicious_ports": {
+      "ports": [4444, 1337, 6667, 9001, 8888, 31337, 5555, 7777, 1234, 12345, 54321, 666, 1338, 9999],
+      "score": 35,
+      "severity": "high",
+      "mitre_techniques": ["T1571", "T1095"]
+    },
+    "c2_framework_ports": {
+      "ports": [2222, 50050, 9090, 8000, 5000, 3333, 6666, 7443],
+      "score": 40,
+      "severity": "high",
+      "mitre_techniques": ["T1571", "T1095"],
+      "description": "Common C2 framework default ports (Cobalt Strike, Metasploit, etc.)"
+    },
+    "rdp_connection": {
+      "ports": [3389],
+      "score": 15,
+      "severity": "medium",
+      "mitre_techniques": ["T1021.001"]
+    },
+    "ssh_connection": {
+      "ports": [22],
+      "score": 10,
+      "severity": "low",
+      "mitre_techniques": ["T1021.004"]
+    },
+    "smb_connection": {
+      "ports": [445, 139],
+      "score": 20,
+      "severity": "medium",
+      "mitre_techniques": ["T1021.002"]
+    },
+    "winrm_connection": {
+      "ports": [5985, 5986],
+      "score": 25,
+      "severity": "medium",
+      "mitre_techniques": ["T1021.006"]
+    },
+    "common_c2_ports": {
+      "ports": [443, 80, 8080, 8443],
+      "score": 5,
+      "severity": "low",
+      "mitre_techniques": ["T1071.001"]
+    },
+    "tor_ports": {
+      "ports": [9050, 9051, 9150],
+      "score": 45,
+      "severity": "high",
+      "mitre_techniques": ["T1090.003"]
+    },
+    "dns_exfil_ports": {
+      "ports": [53, 5353],
+      "score": 15,
+      "severity": "medium",
+      "mitre_techniques": ["T1048.003"]
+    },
+    "irc_ports": {
+      "ports": [6660, 6661, 6662, 6663, 6664, 6665, 6666, 6667, 6668, 6669, 7000],
+      "score": 35,
+      "severity": "high",
+      "mitre_techniques": ["T1071.001"]
+    }
+  },
+  "event_rules": {
+    "log_clearing": {
+      "event_ids": [1102, 104],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1070.001"],
+      "description": "Security/System log was cleared"
+    },
+    "user_creation": {
+      "event_ids": [4720],
+      "score": 25,
+      "severity": "medium",
+      "mitre_techniques": ["T1136.001"]
+    },
+    "user_added_to_admin": {
+      "event_ids": [4732, 4728],
+      "score": 45,
+      "severity": "high",
+      "mitre_techniques": ["T1136.001", "T1098"],
+      "description": "User added to local admin or domain admin group"
+    },
+    "scheduled_task_created": {
+      "event_ids": [4698],
+      "score": 30,
+      "severity": "high",
+      "mitre_techniques": ["T1053.005"]
+    },
+    "service_installed": {
+      "event_ids": [7045],
+      "score": 30,
+      "severity": "high",
+      "mitre_techniques": ["T1543.003"]
+    },
+    "service_start_type_changed": {
+      "event_ids": [7040],
+      "score": 25,
+      "severity": "medium",
+      "mitre_techniques": ["T1543.003"]
+    },
+    "rdp_session": {
+      "event_ids": [1149, 4778, 4779],
+      "score": 15,
+      "severity": "medium",
+      "mitre_techniques": ["T1021.001"]
+    },
+    "explicit_credential_logon": {
+      "event_ids": [4648],
+      "score": 30,
+      "severity": "high",
+      "mitre_techniques": ["T1078", "T1550"],
+      "description": "Logon using explicit credentials (runas, pass-the-hash)"
+    },
+    "special_privileges_assigned": {
+      "event_ids": [4672],
+      "score": 20,
+      "severity": "medium",
+      "mitre_techniques": ["T1134"],
+      "description": "Special privileges assigned to new logon"
+    },
+    "kerberos_ticket_request": {
+      "event_ids": [4768, 4769],
+      "score": 10,
+      "severity": "info",
+      "mitre_techniques": ["T1558"],
+      "description": "Kerberos TGT/service ticket requested"
+    },
+    "kerberos_ticket_failure": {
+      "event_ids": [4771, 4772],
+      "score": 25,
+      "severity": "medium",
+      "mitre_techniques": ["T1558.003"],
+      "description": "Kerberos authentication failure (possible attack)"
+    },
+    "network_share_access": {
+      "event_ids": [5140, 5145],
+      "score": 15,
+      "severity": "medium",
+      "mitre_techniques": ["T1021.002", "T1039"],
+      "description": "Network share accessed"
+    },
+    "admin_share_access": {
+      "event_ids": [5140],
+      "share_patterns": ["ADMIN$", "C$", "IPC$"],
+      "score": 35,
+      "severity": "high",
+      "mitre_techniques": ["T1021.002"],
+      "description": "Administrative share accessed"
+    },
+    "powershell_logging": {
+      "event_ids": [4103, 4104],
+      "score": 10,
+      "severity": "info",
+      "mitre_techniques": ["T1059.001"]
+    },
+    "process_creation": {
+      "event_ids": [4688, 1],
+      "score": 5,
+      "severity": "info",
+      "mitre_techniques": ["T1106"]
+    },
+    "logon_events": {
+      "event_ids": [4624],
+      "score": 5,
+      "severity": "info",
+      "mitre_techniques": ["T1078"]
+    },
+    "failed_logon": {
+      "event_ids": [4625],
+      "score": 15,
+      "severity": "medium",
+      "mitre_techniques": ["T1110"],
+      "description": "Failed logon attempt"
+    },
+    "account_lockout": {
+      "event_ids": [4740],
+      "score": 30,
+      "severity": "high",
+      "mitre_techniques": ["T1110"],
+      "description": "Account locked out (possible brute force)"
+    },
+    "password_change": {
+      "event_ids": [4723, 4724],
+      "score": 20,
+      "severity": "medium",
+      "mitre_techniques": ["T1098"]
+    },
+    "sam_database_access": {
+      "event_ids": [4661],
+      "score": 45,
+      "severity": "high",
+      "mitre_techniques": ["T1003.002"],
+      "description": "SAM database was accessed"
+    },
+    "directory_service_access": {
+      "event_ids": [4662],
+      "score": 25,
+      "severity": "medium",
+      "mitre_techniques": ["T1003.006"],
+      "description": "Directory service object accessed (possible DCSync)"
+    },
+    "firewall_rule_change": {
+      "event_ids": [4946, 4947, 4950],
+      "score": 30,
+      "severity": "high",
+      "mitre_techniques": ["T1562.004"],
+      "description": "Windows Firewall rule added/changed/deleted"
+    },
+    "audit_policy_change": {
+      "event_ids": [4719],
+      "score": 40,
+      "severity": "high",
+      "mitre_techniques": ["T1562.002"],
+      "description": "System audit policy was changed"
+    },
+    "defender_events": {
+      "event_ids": [1116, 1117, 1118, 5001, 5010, 5012],
+      "score": 35,
+      "severity": "high",
+      "mitre_techniques": ["T1562.001"],
+      "description": "Windows Defender detected/blocked threat or was disabled"
+    },
+    "applocker_events": {
+      "event_ids": [8003, 8004, 8006, 8007],
+      "score": 30,
+      "severity": "high",
+      "mitre_techniques": ["T1553"],
+      "description": "AppLocker blocked execution"
+    },
+    "sysmon_process_create": {
+      "event_ids": [1],
+      "score": 5,
+      "severity": "info",
+      "mitre_techniques": ["T1106"],
+      "source": "Sysmon"
+    },
+    "sysmon_network_connect": {
+      "event_ids": [3],
+      "score": 5,
+      "severity": "info",
+      "mitre_techniques": ["T1071"],
+      "source": "Sysmon"
+    },
+    "sysmon_process_access": {
+      "event_ids": [10],
+      "score": 25,
+      "severity": "medium",
+      "mitre_techniques": ["T1003.001"],
+      "source": "Sysmon",
+      "description": "Process accessed (LSASS access detection)"
+    },
+    "sysmon_file_create": {
+      "event_ids": [11],
+      "score": 5,
+      "severity": "info",
+      "mitre_techniques": ["T1105"],
+      "source": "Sysmon"
+    },
+    "sysmon_registry_change": {
+      "event_ids": [12, 13, 14],
+      "score": 10,
+      "severity": "low",
+      "mitre_techniques": ["T1547.001"],
+      "source": "Sysmon"
+    },
+    "sysmon_dns_query": {
+      "event_ids": [22],
+      "score": 5,
+      "severity": "info",
+      "mitre_techniques": ["T1071.004"],
+      "source": "Sysmon"
+    }
+  },
+  "file_rules": {
+    "executable_extensions": {
+      "patterns": [".exe", ".ps1", ".bat", ".vbs", ".scr", ".cmd", ".hta", ".msi", ".dll", ".jar", ".wsf", ".jse", ".vbe"],
+      "score": 40,
+      "severity": "high",
+      "mitre_techniques": ["T1204.002"]
+    },
+    "double_extensions": {
+      "pattern_regex": "\\.[a-z0-9]{2,4}\\.(exe|vbs|bat|ps1|scr|cmd)$",
+      "score": 55,
+      "severity": "critical",
+      "mitre_techniques": ["T1036.007"]
+    },
+    "temp_locations": {
+      "patterns": ["\\temp\\", "\\tmp\\", "\\appdata\\local\\temp"],
+      "score": 25,
+      "severity": "medium",
+      "mitre_techniques": ["T1074.001"]
+    },
+    "startup_locations": {
+      "patterns": ["\\startup\\", "\\start menu\\programs\\startup"],
+      "score": 35,
+      "severity": "high",
+      "mitre_techniques": ["T1547.001"]
+    },
+    "ransomware_extensions": {
+      "patterns": [".encrypted", ".locked", ".crypto", ".crypt", ".locky", ".cerber", ".zepto", ".thor", ".aaa", ".abc", ".zzz", ".micro", ".encrypted", ".crypted", ".enc"],
+      "score": 70,
+      "severity": "critical",
+      "mitre_techniques": ["T1486"]
+    },
+    "ransom_notes": {
+      "patterns": ["readme.txt", "how_to_decrypt", "decrypt_instructions", "ransom", "your_files", "help_decrypt", "restore_files", "!!readme!!", "decrypt_readme"],
+      "score": 65,
+      "severity": "critical",
+      "mitre_techniques": ["T1486"]
+    },
+    "webshell_indicators": {
+      "patterns": ["eval(", "base64_decode", "gzinflate", "str_rot13", "cmd.exe", "system(", "shell_exec", "passthru(", "phpinfo("],
+      "score": 55,
+      "severity": "critical",
+      "mitre_techniques": ["T1505.003"]
+    },
+    "archive_staging": {
+      "patterns": [".7z", ".rar", ".zip", ".tar", ".gz"],
+      "location_patterns": ["\\temp\\", "\\public\\", "\\users\\"],
+      "score": 20,
+      "severity": "medium",
+      "mitre_techniques": ["T1560.001"]
+    }
+  },
+  "dns_rules": {
+    "suspicious_tlds": {
+      "patterns": [".top", ".xyz", ".pw", ".bit", ".live", ".buzz", ".icu", ".tk", ".ml", ".ga", ".cf", ".gq", ".work", ".click", ".link", ".download", ".win", ".review", ".stream", ".party", ".racing", ".cricket"],
+      "score": 30,
+      "severity": "medium",
+      "mitre_techniques": ["T1071.004"]
+    },
+    "tunneling_keywords": {
+      "patterns": ["tunnel", "ngrok", "tor", "onion", "pastebin", "githubusercontent", "duckdns", "no-ip", "dynu", "hopto", "zapto", "sytes", "ddns", "servebeer", "servepics", "redirectme"],
+      "score": 40,
+      "severity": "high",
+      "mitre_techniques": ["T1572", "T1090.003"]
+    },
+    "c2_infrastructure": {
+      "patterns": ["cloudfront", "azurewebsites", "appspot", "herokuapp", "workers.dev", "pages.dev", "netlify", "vercel", "glitch"],
+      "score": 25,
+      "severity": "medium",
+      "mitre_techniques": ["T1102"],
+      "description": "Cloud services commonly abused for C2"
+    },
+    "file_sharing_services": {
+      "patterns": ["dropbox", "mega.nz", "mediafire", "sendspace", "zippyshare", "wetransfer", "file.io", "gofile", "anonfiles", "bayfiles"],
+      "score": 30,
+      "severity": "medium",
+      "mitre_techniques": ["T1567.002"],
+      "description": "File sharing services (potential exfiltration)"
+    },
+    "crypto_mining_pools": {
+      "patterns": ["pool.mining", "minexmr", "hashvault", "nanopool", "f2pool", "antpool", "stratum", "nicehash", "xmrpool", "supportxmr", "miningpoolhub"],
+      "score": 45,
+      "severity": "high",
+      "mitre_techniques": ["T1496"],
+      "description": "Cryptocurrency mining pool"
+    },
+    "dga_indicators": {
+      "description": "Long random-looking domain names",
+      "min_length": 25,
+      "entropy_threshold": 3.5,
+      "score": 35,
+      "severity": "high",
+      "mitre_techniques": ["T1568.002"]
+    },
+    "known_malware_domains": {
+      "patterns": ["malware", "exploit", "payload", "botnet", "ddos", "attack", "hack", "crack", "warez", "keygen"],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1071.001"]
+    }
+  },
+  "registry_rules": {
+    "script_commands": {
+      "patterns": ["powershell", "-enc", "mshta", "cmd /c", "bitsadmin", "http://", "https://", "wscript", "cscript", "regsvr32", "rundll32"],
+      "score": 45,
+      "severity": "high",
+      "mitre_techniques": ["T1547.001", "T1059"]
+    },
+    "suspicious_paths": {
+      "patterns": ["\\temp\\", "\\public\\", "\\roaming\\", "\\appdata\\"],
+      "score": 25,
+      "severity": "medium",
+      "mitre_techniques": ["T1547.001"]
+    },
+    "image_file_execution_options": {
+      "key_patterns": ["image file execution options", "ifeo"],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1546.012"],
+      "description": "IFEO debugger persistence"
+    },
+    "appinit_dlls": {
+      "key_patterns": ["appinit_dlls"],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1546.010"],
+      "description": "AppInit DLL injection"
+    },
+    "accessibility_features": {
+      "patterns": ["sethc.exe", "utilman.exe", "osk.exe", "magnify.exe", "narrator.exe", "displayswitch.exe", "atbroker.exe"],
+      "score": 55,
+      "severity": "critical",
+      "mitre_techniques": ["T1546.008"],
+      "description": "Accessibility feature hijacking (sticky keys backdoor)"
+    },
+    "com_hijacking": {
+      "key_patterns": ["inprocserver32", "localserver32", "scriptleturl"],
+      "suspicious_values": ["scrobj.dll", "\\temp\\", "\\appdata\\"],
+      "score": 45,
+      "severity": "high",
+      "mitre_techniques": ["T1546.015"],
+      "description": "COM object hijacking"
+    },
+    "winlogon_persistence": {
+      "key_patterns": ["winlogon\\userinit", "winlogon\\shell", "winlogon\\notify"],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1547.004"],
+      "description": "Winlogon helper DLL persistence"
+    },
+    "print_monitor": {
+      "key_patterns": ["monitors\\", "print\\monitors"],
+      "score": 45,
+      "severity": "high",
+      "mitre_techniques": ["T1547.010"],
+      "description": "Print monitor persistence"
+    },
+    "security_support_provider": {
+      "key_patterns": ["security packages", "authentication packages"],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1547.005"],
+      "description": "Security Support Provider persistence"
+    },
+    "netsh_helper": {
+      "key_patterns": ["netsh\\helperdll"],
+      "score": 45,
+      "severity": "high",
+      "mitre_techniques": ["T1546.007"],
+      "description": "Netsh helper DLL"
+    }
+  },
+  "service_rules": {
+    "user_space_path": {
+      "patterns": ["\\users\\", "\\temp\\", "\\appdata\\", "\\windows\\debug", "\\programdata\\"],
+      "score": 45,
+      "severity": "high",
+      "mitre_techniques": ["T1543.003"]
+    },
+    "missing_binary": {
+      "score": 30,
+      "severity": "medium",
+      "mitre_techniques": ["T1543.003"]
+    },
+    "suspicious_service_names": {
+      "patterns": ["svchost", "csrss", "lsass", "smss", "services", "winlogon", "wininit", "spoolsv"],
+      "score": 40,
+      "severity": "high",
+      "mitre_techniques": ["T1036.004"],
+      "description": "Service name masquerading as legitimate Windows service"
+    },
+    "script_as_service": {
+      "patterns": ["powershell", "cmd.exe", "wscript", "cscript", "mshta"],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1543.003"],
+      "description": "Script interpreter running as service"
+    }
+  },
+  "browser_rules": {
+    "suspicious_downloads": {
+      "extensions": [".exe", ".dll", ".ps1", ".bat", ".vbs", ".hta", ".msi", ".scr", ".jar"],
+      "score": 35,
+      "severity": "high",
+      "mitre_techniques": ["T1105"]
+    },
+    "suspicious_download_sources": {
+      "patterns": ["pastebin", "raw.githubusercontent", "discord", "telegram", "anonfiles", "temp.sh", "file.io"],
+      "score": 40,
+      "severity": "high",
+      "mitre_techniques": ["T1105", "T1102"]
+    }
+  },
+  "scheduled_task_rules": {
+    "hidden_task": {
+      "patterns": ["hidden=\"true\"", "/tn \\"],
+      "score": 40,
+      "severity": "high",
+      "mitre_techniques": ["T1053.005"]
+    },
+    "system_impersonation": {
+      "user_patterns": ["system", "nt authority"],
+      "location_patterns": ["\\temp\\", "\\appdata\\", "\\users\\public"],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1053.005"]
+    }
+  },
+  "wmi_rules": {
+    "suspicious_consumer_types": {
+      "patterns": ["commandlineeventconsumer", "activescripteventconsumer"],
+      "score": 50,
+      "severity": "critical",
+      "mitre_techniques": ["T1546.003"]
+    },
+    "suspicious_filters": {
+      "patterns": ["win32_processstoptrace", "__instancecreationevent", "__instancemodificationevent"],
+      "score": 35,
+      "severity": "high",
+      "mitre_techniques": ["T1546.003"]
+    }
+  }
+}

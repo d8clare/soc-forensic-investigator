@@ -1,0 +1,109 @@
+title: Suspicious Scheduled Task Creation
+id: e1a82b47-3c45-4e89-91f2-7e6a5b9c8e5c
+status: stable
+description: Detects creation of scheduled tasks via command line
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        CommandLine|contains:
+            - 'schtasks /create'
+            - 'schtasks.exe /create'
+    filter:
+        CommandLine|contains:
+            - 'Microsoft'
+            - 'Windows'
+    condition: selection and not filter
+level: medium
+tags:
+    - attack.persistence
+    - attack.t1053.005
+---
+title: Registry Run Key Modification via Command Line
+id: f2b93c58-4d56-5f90-a2g3-8e7a6b0c9e6d
+status: stable
+description: Detects modification of registry run keys via reg.exe
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|endswith: '\reg.exe'
+        CommandLine|contains:
+            - 'CurrentVersion\Run'
+            - 'CurrentVersion\RunOnce'
+    condition: selection
+level: high
+tags:
+    - attack.persistence
+    - attack.t1547.001
+---
+title: Service Installation via sc.exe
+id: a3c04d69-5e67-6g01-b3h4-9e8a7b1c0e7e
+status: stable
+description: Detects service creation via sc.exe
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|endswith: '\sc.exe'
+        CommandLine|contains:
+            - ' create '
+            - ' config '
+    filter:
+        CommandLine|contains:
+            - 'Microsoft'
+            - 'Windows'
+    condition: selection and not filter
+level: medium
+tags:
+    - attack.persistence
+    - attack.t1543.003
+---
+title: WMI Persistence via wmic.exe
+id: b4d15e70-6f78-7h12-c4i5-0e9a8b2c1e8f
+status: stable
+description: Detects WMI event subscription creation
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|endswith: '\wmic.exe'
+        CommandLine|contains:
+            - '__EventFilter'
+            - '__EventConsumer'
+            - '__FilterToConsumerBinding'
+    condition: selection
+level: high
+tags:
+    - attack.persistence
+    - attack.t1546.003
+---
+title: BITSAdmin Download
+id: c5e26f81-7g89-8i23-d5j6-1e0a9b3c2e9g
+status: stable
+description: Detects BITS job creation for file download
+author: SOC Investigator
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|endswith: '\bitsadmin.exe'
+        CommandLine|contains:
+            - '/transfer'
+            - '/create'
+            - '/addfile'
+    condition: selection
+level: medium
+tags:
+    - attack.defense_evasion
+    - attack.persistence
+    - attack.t1197

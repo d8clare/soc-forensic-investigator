@@ -1,0 +1,84 @@
+# Evidence folders (contain sensitive data)
+Evidence_*/
+
+# Portable Python (too large for git)
+Python_Portable/
+
+# All tools (binaries - download separately)
+tools/
+
+# Windows null file
+nul
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Config files with secrets
+config/auth_config.json
+config/api_keys.json
+config/secure_keys.dat
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Note: tools/ folder excluded above (contains binaries)
+
+# Memory dumps
+*.dmp
+*.raw
+*.vmem
+
+# Temporary files
+*.tmp
+*.temp
+.streamlit/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Test evidence (for development)
+test_evidence/
+sample_evidence/

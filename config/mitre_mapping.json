@@ -1,0 +1,284 @@
+{
+  "version": "ATT&CK v14",
+  "techniques": {
+    "T1003": {
+      "name": "OS Credential Dumping",
+      "tactic": "Credential Access",
+      "phase": "credential-access",
+      "url": "https://attack.mitre.org/techniques/T1003/",
+      "description": "Adversaries may attempt to dump credentials from the operating system."
+    },
+    "T1003.001": {
+      "name": "LSASS Memory",
+      "tactic": "Credential Access",
+      "phase": "credential-access",
+      "url": "https://attack.mitre.org/techniques/T1003/001/",
+      "description": "Adversaries may attempt to access credential material stored in LSASS process memory."
+    },
+    "T1021.001": {
+      "name": "Remote Desktop Protocol",
+      "tactic": "Lateral Movement",
+      "phase": "lateral-movement",
+      "url": "https://attack.mitre.org/techniques/T1021/001/",
+      "description": "Adversaries may use RDP to log into a computer using the Remote Desktop Protocol."
+    },
+    "T1027": {
+      "name": "Obfuscated Files or Information",
+      "tactic": "Defense Evasion",
+      "phase": "defense-evasion",
+      "url": "https://attack.mitre.org/techniques/T1027/",
+      "description": "Adversaries may attempt to make an executable or file difficult to discover or analyze."
+    },
+    "T1036": {
+      "name": "Masquerading",
+      "tactic": "Defense Evasion",
+      "phase": "defense-evasion",
+      "url": "https://attack.mitre.org/techniques/T1036/",
+      "description": "Adversaries may attempt to manipulate features of their artifacts to make them appear legitimate."
+    },
+    "T1036.007": {
+      "name": "Double File Extension",
+      "tactic": "Defense Evasion",
+      "phase": "defense-evasion",
+      "url": "https://attack.mitre.org/techniques/T1036/007/",
+      "description": "Adversaries may abuse a double extension in the filename to disguise the actual file type."
+    },
+    "T1053.005": {
+      "name": "Scheduled Task",
+      "tactic": "Persistence",
+      "phase": "persistence",
+      "url": "https://attack.mitre.org/techniques/T1053/005/",
+      "description": "Adversaries may abuse the Windows Task Scheduler to perform task scheduling for initial or recurring execution."
+    },
+    "T1059": {
+      "name": "Command and Scripting Interpreter",
+      "tactic": "Execution",
+      "phase": "execution",
+      "url": "https://attack.mitre.org/techniques/T1059/",
+      "description": "Adversaries may abuse command and script interpreters to execute commands."
+    },
+    "T1059.001": {
+      "name": "PowerShell",
+      "tactic": "Execution",
+      "phase": "execution",
+      "url": "https://attack.mitre.org/techniques/T1059/001/",
+      "description": "Adversaries may abuse PowerShell commands and scripts for execution."
+    },
+    "T1070.001": {
+      "name": "Clear Windows Event Logs",
+      "tactic": "Defense Evasion",
+      "phase": "defense-evasion",
+      "url": "https://attack.mitre.org/techniques/T1070/001/",
+      "description": "Adversaries may clear Windows Event Logs to hide the activity of an intrusion."
+    },
+    "T1071.001": {
+      "name": "Web Protocols",
+      "tactic": "Command and Control",
+      "phase": "command-and-control",
+      "url": "https://attack.mitre.org/techniques/T1071/001/",
+      "description": "Adversaries may communicate using application layer protocols associated with web traffic."
+    },
+    "T1071.004": {
+      "name": "DNS",
+      "tactic": "Command and Control",
+      "phase": "command-and-control",
+      "url": "https://attack.mitre.org/techniques/T1071/004/",
+      "description": "Adversaries may communicate using the DNS application layer protocol."
+    },
+    "T1074.001": {
+      "name": "Local Data Staging",
+      "tactic": "Collection",
+      "phase": "collection",
+      "url": "https://attack.mitre.org/techniques/T1074/001/",
+      "description": "Adversaries may stage collected data in a central location on the local system."
+    },
+    "T1078": {
+      "name": "Valid Accounts",
+      "tactic": "Defense Evasion",
+      "phase": "defense-evasion",
+      "url": "https://attack.mitre.org/techniques/T1078/",
+      "description": "Adversaries may obtain and abuse credentials of existing accounts."
+    },
+    "T1090.003": {
+      "name": "Multi-hop Proxy",
+      "tactic": "Command and Control",
+      "phase": "command-and-control",
+      "url": "https://attack.mitre.org/techniques/T1090/003/",
+      "description": "Adversaries may chain together multiple proxies to disguise the source of malicious traffic."
+    },
+    "T1095": {
+      "name": "Non-Application Layer Protocol",
+      "tactic": "Command and Control",
+      "phase": "command-and-control",
+      "url": "https://attack.mitre.org/techniques/T1095/",
+      "description": "Adversaries may use a non-application layer protocol for communication between host and C2 server."
+    },
+    "T1105": {
+      "name": "Ingress Tool Transfer",
+      "tactic": "Command and Control",
+      "phase": "command-and-control",
+      "url": "https://attack.mitre.org/techniques/T1105/",
+      "description": "Adversaries may transfer tools or other files from an external system into a compromised environment."
+    },
+    "T1106": {
+      "name": "Native API",
+      "tactic": "Execution",
+      "phase": "execution",
+      "url": "https://attack.mitre.org/techniques/T1106/",
+      "description": "Adversaries may interact with the native OS application programming interface (API) to execute behaviors."
+    },
+    "T1136.001": {
+      "name": "Local Account",
+      "tactic": "Persistence",
+      "phase": "persistence",
+      "url": "https://attack.mitre.org/techniques/T1136/001/",
+      "description": "Adversaries may create a local account to maintain access to victim systems."
+    },
+    "T1204.002": {
+      "name": "Malicious File",
+      "tactic": "Execution",
+      "phase": "execution",
+      "url": "https://attack.mitre.org/techniques/T1204/002/",
+      "description": "An adversary may rely upon a user opening a malicious file in order to gain execution."
+    },
+    "T1218": {
+      "name": "Signed Binary Proxy Execution",
+      "tactic": "Defense Evasion",
+      "phase": "defense-evasion",
+      "url": "https://attack.mitre.org/techniques/T1218/",
+      "description": "Adversaries may bypass process and/or signature-based defenses by proxying execution of malicious content."
+    },
+    "T1543.003": {
+      "name": "Windows Service",
+      "tactic": "Persistence",
+      "phase": "persistence",
+      "url": "https://attack.mitre.org/techniques/T1543/003/",
+      "description": "Adversaries may create or modify Windows services to repeatedly execute malicious payloads."
+    },
+    "T1547.001": {
+      "name": "Registry Run Keys / Startup Folder",
+      "tactic": "Persistence",
+      "phase": "persistence",
+      "url": "https://attack.mitre.org/techniques/T1547/001/",
+      "description": "Adversaries may achieve persistence by adding a program to a startup folder or referencing it with a Registry run key."
+    },
+    "T1566.001": {
+      "name": "Spearphishing Attachment",
+      "tactic": "Initial Access",
+      "phase": "initial-access",
+      "url": "https://attack.mitre.org/techniques/T1566/001/",
+      "description": "Adversaries may send spearphishing emails with a malicious attachment."
+    },
+    "T1568.002": {
+      "name": "Domain Generation Algorithms",
+      "tactic": "Command and Control",
+      "phase": "command-and-control",
+      "url": "https://attack.mitre.org/techniques/T1568/002/",
+      "description": "Adversaries may use DGAs to dynamically identify a destination domain for command and control traffic."
+    },
+    "T1571": {
+      "name": "Non-Standard Port",
+      "tactic": "Command and Control",
+      "phase": "command-and-control",
+      "url": "https://attack.mitre.org/techniques/T1571/",
+      "description": "Adversaries may communicate using a protocol and port pairing that are typically not associated."
+    },
+    "T1572": {
+      "name": "Protocol Tunneling",
+      "tactic": "Command and Control",
+      "phase": "command-and-control",
+      "url": "https://attack.mitre.org/techniques/T1572/",
+      "description": "Adversaries may tunnel network communications to and from a victim system within a separate protocol."
+    },
+    "T1574": {
+      "name": "Hijack Execution Flow",
+      "tactic": "Defense Evasion",
+      "phase": "defense-evasion",
+      "url": "https://attack.mitre.org/techniques/T1574/",
+      "description": "Adversaries may execute their own malicious payloads by hijacking the way operating systems run programs."
+    }
+  },
+  "kill_chain_phases": [
+    {
+      "id": "initial-access",
+      "name": "Initial Access",
+      "order": 1,
+      "description": "Techniques used to gain initial access to the network"
+    },
+    {
+      "id": "execution",
+      "name": "Execution",
+      "order": 2,
+      "description": "Techniques that result in adversary-controlled code running on a local or remote system"
+    },
+    {
+      "id": "persistence",
+      "name": "Persistence",
+      "order": 3,
+      "description": "Techniques used to maintain access to systems across restarts"
+    },
+    {
+      "id": "privilege-escalation",
+      "name": "Privilege Escalation",
+      "order": 4,
+      "description": "Techniques used to gain higher-level permissions on a system or network"
+    },
+    {
+      "id": "defense-evasion",
+      "name": "Defense Evasion",
+      "order": 5,
+      "description": "Techniques used to avoid detection throughout the compromise"
+    },
+    {
+      "id": "credential-access",
+      "name": "Credential Access",
+      "order": 6,
+      "description": "Techniques for stealing credentials like account names and passwords"
+    },
+    {
+      "id": "discovery",
+      "name": "Discovery",
+      "order": 7,
+      "description": "Techniques used to gain knowledge about the system and internal network"
+    },
+    {
+      "id": "lateral-movement",
+      "name": "Lateral Movement",
+      "order": 8,
+      "description": "Techniques used to enter and control remote systems on a network"
+    },
+    {
+      "id": "collection",
+      "name": "Collection",
+      "order": 9,
+      "description": "Techniques used to gather data of interest from the target environment"
+    },
+    {
+      "id": "command-and-control",
+      "name": "Command and Control",
+      "order": 10,
+      "description": "Techniques used for communicating with compromised systems to control them"
+    },
+    {
+      "id": "exfiltration",
+      "name": "Exfiltration",
+      "order": 11,
+      "description": "Techniques used to steal data from the network"
+    },
+    {
+      "id": "impact",
+      "name": "Impact",
+      "order": 12,
+      "description": "Techniques used to disrupt availability or compromise integrity"
+    }
+  ],
+  "detection_sources": {
+    "process": ["T1003", "T1059", "T1059.001", "T1106", "T1218"],
+    "network": ["T1021.001", "T1071.001", "T1071.004", "T1095", "T1571", "T1572"],
+    "registry": ["T1547.001", "T1574"],
+    "file": ["T1027", "T1036", "T1036.007", "T1074.001", "T1204.002"],
+    "event_log": ["T1070.001", "T1078", "T1136.001"],
+    "scheduled_task": ["T1053.005"],
+    "service": ["T1543.003"]
+  }
+}

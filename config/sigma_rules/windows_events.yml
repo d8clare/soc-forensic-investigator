@@ -1,0 +1,132 @@
+title: Security Log Cleared
+id: d6f37g92-8h90-9j34-e6k7-2e1a0b4c3e0h
+status: stable
+description: Detects clearing of Security event log
+author: SOC Investigator
+logsource:
+    product: windows
+    service: security
+detection:
+    selection:
+        EventID: 1102
+    condition: selection
+level: critical
+tags:
+    - attack.defense_evasion
+    - attack.t1070.001
+---
+title: System Log Cleared
+id: e7g48h03-9i01-0k45-f7l8-3e2a1b5c4e1i
+status: stable
+description: Detects clearing of System event log
+author: SOC Investigator
+logsource:
+    product: windows
+    service: system
+detection:
+    selection:
+        EventID: 104
+    condition: selection
+level: critical
+tags:
+    - attack.defense_evasion
+    - attack.t1070.001
+---
+title: New User Account Created
+id: f8h59i14-0j12-1l56-g8m9-4e3a2b6c5e2j
+status: stable
+description: Detects creation of new local user account
+author: SOC Investigator
+logsource:
+    product: windows
+    service: security
+detection:
+    selection:
+        EventID: 4720
+    condition: selection
+level: medium
+tags:
+    - attack.persistence
+    - attack.t1136.001
+---
+title: User Added to Administrators Group
+id: g9i60j25-1k23-2m67-h9n0-5e4a3b7c6e3k
+status: stable
+description: Detects user being added to local Administrators group
+author: SOC Investigator
+logsource:
+    product: windows
+    service: security
+detection:
+    selection:
+        EventID: 4732
+    filter:
+        TargetUserName|contains: 'Administrators'
+    condition: selection and filter
+level: high
+tags:
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1098
+---
+title: RDP Session Connected
+id: h0j71k36-2l34-3n78-i0o1-6e5a4b8c7e4l
+status: stable
+description: Detects successful RDP session connection
+author: SOC Investigator
+logsource:
+    product: windows
+    service: security
+detection:
+    selection:
+        EventID:
+            - 4624
+        LogonType: 10
+    condition: selection
+level: medium
+tags:
+    - attack.lateral_movement
+    - attack.t1021.001
+---
+title: New Service Installed
+id: i1k82l47-3m45-4o89-j1p2-7e6a5b9c8e5m
+status: stable
+description: Detects installation of new Windows service
+author: SOC Investigator
+logsource:
+    product: windows
+    service: system
+detection:
+    selection:
+        EventID: 7045
+    condition: selection
+level: medium
+tags:
+    - attack.persistence
+    - attack.t1543.003
+---
+title: PowerShell Script Block Logging
+id: j2l93m58-4n56-5p90-k2q3-8e7a6b0c9e6n
+status: stable
+description: Detects PowerShell script execution via script block logging
+author: SOC Investigator
+logsource:
+    product: windows
+    service: powershell
+detection:
+    selection:
+        EventID: 4104
+    keywords:
+        ScriptBlockText|contains:
+            - 'Invoke-Mimikatz'
+            - 'Invoke-Expression'
+            - 'DownloadString'
+            - 'DownloadFile'
+            - 'FromBase64String'
+            - '-enc'
+            - 'IEX('
+    condition: selection and keywords
+level: high
+tags:
+    - attack.execution
+    - attack.t1059.001

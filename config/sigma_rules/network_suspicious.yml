@@ -1,0 +1,86 @@
+title: Connection to Known C2 Port
+id: d5e91c73-7f21-4e89-b8c5-9e5a8a8c9e1d
+status: stable
+description: Detects connections to common C2 framework ports
+author: SOC Investigator
+logsource:
+    category: network_connection
+    product: windows
+detection:
+    selection:
+        DestinationPort:
+            - 4444
+            - 5555
+            - 8888
+            - 1337
+            - 31337
+    condition: selection
+level: high
+tags:
+    - attack.command_and_control
+    - attack.t1571
+---
+title: Connection to Tor Network
+id: a8c91b54-3e12-4d78-92c1-7e5a4b9c8e2f
+status: stable
+description: Detects connections to Tor network ports
+author: SOC Investigator
+logsource:
+    category: network_connection
+    product: windows
+detection:
+    selection:
+        DestinationPort:
+            - 9001
+            - 9030
+            - 9050
+            - 9051
+            - 9150
+    condition: selection
+level: high
+tags:
+    - attack.command_and_control
+    - attack.t1090.003
+---
+title: IRC Bot Communication
+id: c7e82a45-1b23-4c67-89d0-6e4a5b8c7e3a
+status: stable
+description: Detects connections to IRC ports commonly used for botnet C2
+author: SOC Investigator
+logsource:
+    category: network_connection
+    product: windows
+detection:
+    selection:
+        DestinationPort:
+            - 6666
+            - 6667
+            - 6668
+            - 6669
+            - 7000
+    condition: selection
+level: high
+tags:
+    - attack.command_and_control
+    - attack.t1071.001
+---
+title: Cryptocurrency Mining Pool Connection
+id: b9f71c36-2a34-5d78-90e1-5e3a4b7c6e4b
+status: stable
+description: Detects connections to common cryptocurrency mining ports
+author: SOC Investigator
+logsource:
+    category: network_connection
+    product: windows
+detection:
+    selection:
+        DestinationPort:
+            - 3333
+            - 14444
+            - 45560
+            - 13531
+    condition: selection
+level: high
+tags:
+    - attack.impact
+    - attack.t1496
