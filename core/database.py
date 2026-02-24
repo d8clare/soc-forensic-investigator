@@ -259,17 +259,37 @@ INDEXES = [
 class EvidenceDatabase:
     """SQLite database for caching and querying evidence data."""
 
+    # Cache directory - outside evidence folder to preserve forensic integrity
+    CACHE_DIR = ".forensic_cache"
+
     def __init__(self, evidence_folder: str):
         """
         Initialize database for an evidence folder.
 
         Args:
             evidence_folder: Path to evidence folder
+
+        Note:
+            Database is stored OUTSIDE the evidence folder to preserve
+            forensic integrity. Cache is stored in user's home directory.
         """
         self.evidence_folder = evidence_folder
-        self.db_path = os.path.join(evidence_folder, "evidence_cache.db")
+
+        # Create cache directory in user's home (not in evidence folder!)
+        cache_base = os.path.join(str(Path.home()), self.CACHE_DIR)
+        os.makedirs(cache_base, exist_ok=True)
+
+        # Use hash of evidence folder path for unique cache file
+        import hashlib
+        folder_hash = hashlib.md5(evidence_folder.encode()).hexdigest()[:12]
+        folder_name = os.path.basename(evidence_folder)
+        cache_filename = f"{folder_name}_{folder_hash}.db"
+
+        self.db_path = os.path.join(cache_base, cache_filename)
         self.conn: Optional[sqlite3.Connection] = None
         self._initialized = False
+
+        logger.debug("Evidence cache database: %s", self.db_path)
 
     def connect(self) -> sqlite3.Connection:
         """Get or create database connection."""

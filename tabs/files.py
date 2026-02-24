@@ -232,9 +232,9 @@ def render_recent_files_tab(files_data, risk_engine):
             hr_export = high_risk_df[['filename', 'path', 'created', 'size_mb', 'Analysis', 'sha256']].copy()
             if 'created' in hr_export.columns:
                 hr_export['created'] = hr_export['created'].dt.strftime('%Y-%m-%d %H:%M:%S')
-            st.download_button(f"🔴 Export High Risk ({len(high_risk_df)})", hr_export.to_csv(index=False), "high_risk_files.csv", "text/csv", key="hr_export")
+            st.download_button(f"🔴 Export High Risk ({len(high_risk_df)})", hr_export.to_csv(index=False), "high_risk_files.csv", "text/csv", key="files_highrisk_export")
         else:
-            st.button("🔴 No High Risk Files", disabled=True, key="hr_export_disabled")
+            st.caption("🔴 No High Risk Files")
 
     with col3:
         # Export hashes only
@@ -242,11 +242,11 @@ def render_recent_files_tab(files_data, risk_engine):
             hashes = df['sha256'].dropna().tolist()
             if hashes:
                 hash_content = '\n'.join(hashes)
-                st.download_button("🔑 Export Hashes", hash_content, "file_hashes.txt", "text/plain", key="hash_export")
+                st.download_button("🔑 Export Hashes", hash_content, "file_hashes.txt", "text/plain", key="files_hashes_export")
             else:
-                st.button("🔑 No Hashes", disabled=True, key="hash_export_disabled")
+                st.caption("🔑 No Hashes")
         else:
-            st.button("🔑 No Hashes", disabled=True, key="hash_export_disabled2")
+            st.caption("🔑 No Hashes")
 
 
 def analyze_file_stats(files_data, risk_engine):

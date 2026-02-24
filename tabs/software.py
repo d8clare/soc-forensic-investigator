@@ -71,16 +71,16 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     with col1:
         if soft_data:
             df_export = pd.DataFrame(soft_data)
-            st.download_button("📦 Export Software List", df_export.to_csv(index=False), "installed_software.csv", "text/csv", key="soft_export")
+            st.download_button("📦 Export Software List", df_export.to_csv(index=False), "installed_software.csv", "text/csv", key="software_list_export")
         else:
-            st.button("📦 No Software Data", disabled=True, key="soft_export_disabled")
+            st.caption("📦 No Software Data")
 
     with col2:
         if dns_data:
             df_export = pd.DataFrame(dns_data)
-            st.download_button("🌐 Export DNS Cache", df_export.to_csv(index=False), "dns_cache.csv", "text/csv", key="dns_export")
+            st.download_button("🌐 Export DNS Cache", df_export.to_csv(index=False), "dns_cache.csv", "text/csv", key="software_dns_export")
         else:
-            st.button("🌐 No DNS Data", disabled=True, key="dns_export_disabled")
+            st.caption("🌐 No DNS Data")
 
 
 def analyze_software_stats(soft_data):

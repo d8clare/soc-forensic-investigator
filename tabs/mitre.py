@@ -135,7 +135,12 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     total_evidence = sum(len(f) for f in findings_by_mitre.values())
 
     # Simple header with blue styling
-    st.markdown(f'<div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;"><b>MITRE ATT&CK</b> | Techniques: {len(detected_techniques)} | Tactics: {len(tactics)} | Evidence: {total_evidence}</div>', unsafe_allow_html=True)
+    st.markdown(f'''
+        <div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;">
+            <b>MITRE ATT&CK</b> | Techniques: {len(detected_techniques)} |
+            Tactics: {len(tactics)} | Evidence: {total_evidence}
+        </div>
+    ''', unsafe_allow_html=True)
 
     # Build table data (used for both table view and CSV export)
     table_data = []
@@ -224,23 +229,27 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
                         # Format evidence details
                         evidence_str = format_evidence(finding.evidence)
 
+                        # Escape category and description for safe HTML rendering
+                        safe_category = escape_html(finding.category)
+                        safe_description = escape_html(finding.description)
+
                         st.markdown(
                             f"""
                             <div style="
                                 border-left: 4px solid {severity_color};
                                 padding: 10px 15px;
                                 margin: 8px 0;
-                                background-color: #f8f9fa;
+                                background-color: #161b22;
                                 border-radius: 0 4px 4px 0;
                             ">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <strong>{finding.category}</strong>
+                                    <strong style="color: #c9d1d9;">{safe_category}</strong>
                                     <span style="background: {severity_color}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;">
                                         Score: {finding.score} | {finding.severity.upper()}
                                     </span>
                                 </div>
-                                <div style="margin-top: 8px; color: #333;">
-                                    {finding.description}
+                                <div style="margin-top: 8px; color: #8b949e;">
+                                    {safe_description}
                                 </div>
                             </div>
                             """,
@@ -336,7 +345,7 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
         "summary": {
             "techniques_detected": len(detected_techniques),
             "total_evidence": total_evidence,
-            "tactics_covered": list(tactics) if 'tactics' in dir() else []
+            "tactics_covered": list(tactics)
         },
         "techniques": {}
     }
@@ -369,7 +378,8 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
             data=json.dumps(export_data, indent=2),
             file_name="mitre_attack_report.json",
             mime="application/json",
-            width="stretch"
+            width="stretch",
+            key="mitre_json_export"
         )
 
     with col2:
@@ -381,5 +391,6 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
                 data=csv_df.to_csv(index=False),
                 file_name="mitre_evidence.csv",
                 mime="text/csv",
-                width="stretch"
+                width="stretch",
+                key="mitre_csv_export"
             )

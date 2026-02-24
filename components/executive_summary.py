@@ -71,21 +71,17 @@ class ExecutiveSummary:
 </div>''', unsafe_allow_html=True)
             return
 
-        st.markdown(f'''<div style="background:#0d1117;border-radius:8px;border:1px solid #30363d;overflow:hidden;">
-<div style="background:#161b22;padding:12px 16px;border-bottom:1px solid #30363d;">
-<span style="color:#c9d1d9;font-weight:600;font-size:0.9rem;">Priority Findings</span>
-<span style="background:#f8514930;color:#f85149;padding:2px 6px;border-radius:10px;font-size:0.7rem;margin-left:8px;">{len(findings)}</span>
-</div>''', unsafe_allow_html=True)
+        # Build all findings HTML as a single string to maintain proper structure
+        sev_colors = {
+            'critical': ('#f85149', '#f8514920'),
+            'high': ('#d29922', '#d2992220'),
+            'medium': ('#58a6ff', '#58a6ff20'),
+            'low': ('#3fb950', '#3fb95020'),
+        }
 
+        findings_html = ""
         for i, finding in enumerate(findings):
-            sev_colors = {
-                'critical': ('#f85149', '#f8514920'),
-                'high': ('#d29922', '#d2992220'),
-                'medium': ('#58a6ff', '#58a6ff20'),
-                'low': ('#3fb950', '#3fb95020'),
-            }
             color, bg = sev_colors.get(finding.severity, ('#8b949e', '#8b949e20'))
-
             border_style = "border-bottom:1px solid #21262d;" if i < len(findings) - 1 else ""
 
             mitre_html = ""
@@ -94,16 +90,23 @@ class ExecutiveSummary:
                     mitre_html += f'<span style="background:#388bfd20;color:#58a6ff;padding:2px 6px;border-radius:3px;font-size:0.7rem;margin-right:4px;">{t}</span>'
 
             desc = finding.description[:90] + '...' if len(finding.description) > 90 else finding.description
-            st.markdown(f'''<div style="padding:12px 16px;{border_style}display:flex;align-items:center;gap:12px;">
+            findings_html += f'''<div style="padding:12px 16px;{border_style}display:flex;align-items:center;gap:12px;">
 <div style="background:{bg};color:{color};padding:4px 8px;border-radius:4px;font-weight:600;font-size:0.8rem;min-width:32px;text-align:center;">{finding.score}</div>
 <div style="flex:1;min-width:0;">
 <div style="color:#c9d1d9;font-weight:500;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{finding.category}</div>
 <div style="color:#8b949e;font-size:0.75rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{desc}</div>
 </div>
 <div style="flex-shrink:0;">{mitre_html}</div>
-</div>''', unsafe_allow_html=True)
+</div>'''
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Render complete panel in single markdown call
+        st.markdown(f'''<div style="background:#0d1117;border-radius:8px;border:1px solid #30363d;overflow:hidden;">
+<div style="background:#161b22;padding:12px 16px;border-bottom:1px solid #30363d;">
+<span style="color:#c9d1d9;font-weight:600;font-size:0.9rem;">Priority Findings</span>
+<span style="background:#f8514930;color:#f85149;padding:2px 6px;border-radius:10px;font-size:0.7rem;margin-left:8px;">{len(findings)}</span>
+</div>
+{findings_html}
+</div>''', unsafe_allow_html=True)
 
     def render_mitre_coverage(self):
         """Render MITRE ATT&CK techniques as compact tags with view button."""

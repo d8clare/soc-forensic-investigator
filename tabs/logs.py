@@ -3,6 +3,7 @@ Event Logs Explorer Tab - Professional Forensic Investigation View.
 Displays Windows event logs with filtering, categorization, and analysis.
 Supports SQLite pagination for large datasets.
 """
+import os
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
@@ -86,6 +87,51 @@ RISK_INDICATORS = {
 }
 
 
+@st.cache_data
+def analyze_events_cached(_folder_hash: str, ev_data: list) -> pd.DataFrame:
+    """Analyze all events and return DataFrame with risk columns. Cached for performance."""
+    df = pd.DataFrame(ev_data)
+
+    # Ensure Id is numeric
+    if 'Id' in df.columns:
+        df['Id'] = pd.to_numeric(df['Id'], errors='coerce')
+
+    # Parse time column
+    if 'Time' in df.columns:
+        df['Time'] = pd.to_datetime(df['Time'], errors='coerce')
+
+    # Vectorized event analysis
+    def get_event_info(event_id):
+        if pd.isna(event_id):
+            event_id = 0
+        else:
+            event_id = int(event_id)
+        event_info = EVENT_IDS.get(event_id, {})
+        return (
+            RISK_INDICATORS.get(event_info.get('risk', 'info'), '⚪'),
+            event_info.get('risk', 'info'),
+            event_info.get('category', 'Other'),
+            event_info.get('desc', ''),
+            event_info.get('mitre', '')
+        )
+
+    if 'Id' in df.columns:
+        results = df['Id'].apply(get_event_info)
+        df['Indicator'] = results.apply(lambda x: x[0])
+        df['Risk'] = results.apply(lambda x: x[1])
+        df['Category'] = results.apply(lambda x: x[2])
+        df['Description'] = results.apply(lambda x: x[3])
+        df['MITRE'] = results.apply(lambda x: x[4])
+    else:
+        df['Indicator'] = '⚪'
+        df['Risk'] = 'info'
+        df['Category'] = 'Other'
+        df['Description'] = ''
+        df['MITRE'] = ''
+
+    return df
+
+
 def render(evidence_folder: str, risk_engine: RiskEngine):
     """Render the Event Logs Explorer tab."""
 
@@ -141,29 +187,28 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
         if stats_key not in st.session_state:
             # Load all events once for stats calculation
             all_events_for_stats = load_json(evidence_folder, "all_events.json") or []
-            st.session_state[stats_key] = analyze_event_stats(all_events_for_stats)
+            st.session_state[stats_key] = analyze_event_stats(stats_key, all_events_for_stats)
         event_stats = st.session_state[stats_key]
         total_events = total_count
     else:
-        event_stats = analyze_event_stats(ev_data)
+        folder_hash = os.path.basename(evidence_folder) + "_stats"
+        event_stats = analyze_event_stats(folder_hash, ev_data)
         total_events = len(ev_data)
     critical_count = event_stats.get('critical', 0)
     high_count = event_stats.get('high', 0)
     security_count = event_stats.get('security', 0)
 
     # Simple header with blue styling
-    st.markdown(f'<div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;"><b>Logs</b> | Total: {total_events:,} | Critical: {critical_count} | High: {high_count} | Security: {security_count}</div>', unsafe_allow_html=True)
+    st.markdown(f'''
+        <div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;">
+            <b>Logs</b> | Total: {total_events:,} | Critical: {critical_count} |
+            High: {high_count} | Security: {security_count}
+        </div>
+    ''', unsafe_allow_html=True)
 
-
-    df = pd.DataFrame(ev_data)
-
-    # Ensure Id is numeric
-    if 'Id' in df.columns:
-        df['Id'] = pd.to_numeric(df['Id'], errors='coerce')
-
-    # Parse time column
-    if 'Time' in df.columns:
-        df['Time'] = pd.to_datetime(df['Time'], errors='coerce')
+    # Create analyzed DataFrame (cached)
+    folder_hash_df = os.path.basename(evidence_folder) + "_df"
+    df = analyze_events_cached(folder_hash_df, ev_data)
 
     # Filter row 1: Search and Log Source
     col_search, col_log = st.columns([2, 2])
@@ -188,26 +233,6 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
 
     with col_time:
         time_filter = st.selectbox("Time Range", ["All Time", "Last Hour", "Last 24 Hours", "Last 7 Days"], key="logs_time")
-
-    # Analyze each event
-    def analyze_event(row):
-        event_id = row.get('Id', 0)
-        if pd.isna(event_id):
-            event_id = 0
-        else:
-            event_id = int(event_id)
-
-        event_info = EVENT_IDS.get(event_id, {})
-        risk = event_info.get('risk', 'info')
-        category = event_info.get('category', 'Other')
-        desc = event_info.get('desc', '')
-        mitre = event_info.get('mitre', '')
-
-        indicator = RISK_INDICATORS.get(risk, '⚪')
-
-        return pd.Series([indicator, risk, category, desc, mitre])
-
-    df[['Indicator', 'Risk', 'Category', 'Description', 'MITRE']] = df.apply(analyze_event, axis=1)
 
     # Apply filters
     filtered_df = df.copy()
@@ -238,16 +263,20 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     elif risk_filter == "Notable Events":
         filtered_df = filtered_df[filtered_df['Risk'].isin(['critical', 'high', 'medium'])]
 
-    # Time filter
+    # Time filter - use latest event time as reference, not system time
     if time_filter != "All Time" and 'Time' in filtered_df.columns:
-        now = datetime.now()
-        if time_filter == "Last Hour":
-            cutoff = now - timedelta(hours=1)
-        elif time_filter == "Last 24 Hours":
-            cutoff = now - timedelta(hours=24)
-        elif time_filter == "Last 7 Days":
-            cutoff = now - timedelta(days=7)
-        filtered_df = filtered_df[filtered_df['Time'] >= cutoff]
+        latest_time = filtered_df['Time'].max()
+        if pd.notna(latest_time):
+            if time_filter == "Last Hour":
+                cutoff = latest_time - timedelta(hours=1)
+            elif time_filter == "Last 24 Hours":
+                cutoff = latest_time - timedelta(hours=24)
+            elif time_filter == "Last 7 Days":
+                cutoff = latest_time - timedelta(days=7)
+            else:
+                cutoff = None
+            if cutoff:
+                filtered_df = filtered_df[filtered_df['Time'] >= cutoff]
 
     # Sort by time (most recent first)
     if 'Time' in filtered_df.columns:
@@ -373,9 +402,9 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
             crit_export = critical_df[['Time', 'Id', 'Description', 'LogName', 'Message']].copy()
             if 'Time' in crit_export.columns:
                 crit_export['Time'] = crit_export['Time'].dt.strftime('%Y-%m-%d %H:%M:%S')
-            st.download_button(f"🔴 Export Critical ({len(critical_df)})", crit_export.to_csv(index=False), "critical_events.csv", "text/csv", key="logs_critical_export")
+            st.download_button(f"🔴 Export Critical ({len(critical_df)})", crit_export.to_csv(index=False), "critical_events.csv", "text/csv", key="logs_critical_events_export")
         else:
-            st.button("🔴 No Critical Events", disabled=True, key="logs_critical_disabled")
+            st.caption("🔴 No Critical Events")
 
     with col3:
         all_export = df[['Time', 'Id', 'LogName', 'LevelDisplayName', 'Message']].copy()
@@ -384,8 +413,9 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
         st.download_button(f"📊 Export All ({len(df):,})", all_export.to_csv(index=False), "all_event_logs.csv", "text/csv", key="logs_all_export")
 
 
-def analyze_event_stats(ev_data):
-    """Analyze events for statistics."""
+@st.cache_data
+def analyze_event_stats(ev_data_hash: str, ev_data: list):
+    """Analyze events for statistics. Cached for performance."""
     stats = {'critical': 0, 'high': 0, 'medium': 0, 'security': 0}
 
     for event in ev_data:
@@ -404,7 +434,7 @@ def analyze_event_stats(ev_data):
                     stats['high'] += 1
                 elif risk == 'medium':
                     stats['medium'] += 1
-            except:
+            except (ValueError, TypeError):
                 pass
 
         if 'security' in log_name:

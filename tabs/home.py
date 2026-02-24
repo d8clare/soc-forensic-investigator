@@ -23,7 +23,7 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     audit_log = load_json(evidence_folder, "audit_log.json")
 
     # Initialize exporter and extract IOCs
-    case_name = evidence_folder.split("\\")[-1] if "\\" in evidence_folder else evidence_folder.split("/")[-1]
+    case_name = os.path.basename(evidence_folder) or "case"
     exporter = ForensicExporter(case_name, risk_engine)
     exporter.extract_iocs_from_data(
         processes=processes,
@@ -49,7 +49,23 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
         col_hostname = audit_log.get('hostname', 'Unknown')
         col_artifacts = len(audit_log.get('artifacts_collected', []))
 
-        st.markdown(f'''<div style="background:linear-gradient(135deg,#0d1117 0%,#161b22 100%);border-radius:8px;border:1px solid #30363d;padding:12px 16px;margin-bottom:15px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;"><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div style="display:flex;align-items:center;gap:8px;"><span style="color:#58a6ff;font-size:0.85rem;">Collector v{col_version}</span></div><div style="color:#30363d;">|</div><div style="color:#8b949e;font-size:0.8rem;">Collected: {col_end[:19] if col_end else "N/A"}</div><div style="color:#30363d;">|</div><div style="color:#8b949e;font-size:0.8rem;">Duration: {col_duration}s</div><div style="color:#30363d;">|</div><div style="color:#8b949e;font-size:0.8rem;">Artifacts: {col_artifacts}</div></div></div>''', unsafe_allow_html=True)
+        collected_time = col_end[:19] if col_end else "N/A"
+        st.markdown(f'''
+            <div style="background:linear-gradient(135deg,#0d1117 0%,#161b22 100%);
+                        border-radius:8px;border:1px solid #30363d;padding:12px 16px;
+                        margin-bottom:15px;display:flex;align-items:center;
+                        justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;">
+                    <span style="color:#58a6ff;font-size:0.85rem;">Collector v{col_version}</span>
+                    <span style="color:#30363d;">|</span>
+                    <span style="color:#8b949e;font-size:0.8rem;">Collected: {collected_time}</span>
+                    <span style="color:#30363d;">|</span>
+                    <span style="color:#8b949e;font-size:0.8rem;">Duration: {col_duration}s</span>
+                    <span style="color:#30363d;">|</span>
+                    <span style="color:#8b949e;font-size:0.8rem;">Artifacts: {col_artifacts}</span>
+                </div>
+            </div>
+        ''', unsafe_allow_html=True)
 
     # Detection Engines
     sigma_stats = st.session_state.get('sigma_stats', {})
@@ -102,10 +118,14 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
 </div>''', unsafe_allow_html=True)
 
     with det_col3:
+        ti_feeds = ti_stats.get('feeds_loaded', 0) or st.session_state.get('threat_intel_feeds', 0)
+        ti_active = ti_feeds > 0 or ti_total > 0
+        ti_status = "Active" if ti_active else "Inactive"
+        ti_color = "#3fb950" if ti_active else "#8b949e"
         st.markdown(f'''<div style="background:#0d1117;border-radius:8px;border:1px solid #30363d;padding:14px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
 <span style="color:#c9d1d9;font-weight:600;">Threat Intel</span>
-<span style="background:#3fb95030;color:#3fb950;padding:2px 8px;border-radius:10px;font-size:0.7rem;">Active</span>
+<span style="background:{ti_color}30;color:{ti_color};padding:2px 8px;border-radius:10px;font-size:0.7rem;">{ti_status}</span>
 </div>
 <div style="display:flex;gap:12px;">
 <div><span style="color:#f85149;font-weight:600;">{ti_total}</span> <span style="color:#6e7681;font-size:0.75rem;">hits</span></div>

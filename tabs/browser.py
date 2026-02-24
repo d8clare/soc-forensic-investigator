@@ -486,7 +486,7 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
 
     # ==================== TAB 5: Analysis ====================
     with tab_analysis:
-        render_analysis_tab(evidence_folder)
+        render_analysis_tab(all_history, all_cookies)
 
 
 def render_history_tab(hist_data):
@@ -689,11 +689,9 @@ def render_cookies_tab(cookies_data):
     st.caption(f"Showing {len(df_display):,} of {original_count:,} | Types: 🔴 Auth 🟠 Session 🟡 CSRF 🔵 Tracking 🍪 Standard")
 
 
-def render_analysis_tab(evidence_folder: str):
+def render_analysis_tab(hist_data: list, cookies_data: list):
     """Render the analysis and IOC extraction tab."""
-    # Load both data sources
-    hist_data = load_json(evidence_folder, "browser_history.json")
-    cookies_data = load_json(evidence_folder, "browser_cookies.json")
+    # Data is passed from parent function - no duplicate loading
 
     all_domains = set()
     suspicious_domains = set()

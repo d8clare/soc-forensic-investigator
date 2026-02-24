@@ -126,7 +126,15 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     time_start = time_range[0].strftime('%Y-%m-%d %H:%M') if time_range[0] else 'Unknown'
     time_end = time_range[1].strftime('%Y-%m-%d %H:%M') if time_range[1] else 'Unknown'
 
-    st.markdown(f'<div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;"><b>Timeline</b> | {stats.get("total", 0):,} events | Flagged: {stats.get("risky", 0)} | Sources: {len(stats.get("types", {}))} | Range: {time_start} to {time_end}</div>', unsafe_allow_html=True)
+    total_events = stats.get("total", 0)
+    flagged_count = stats.get("risky", 0)
+    source_count = len(stats.get("types", {}))
+    st.markdown(f'''
+        <div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;">
+            <b>Timeline</b> | {total_events:,} events | Flagged: {flagged_count} |
+            Sources: {source_count} | Range: {time_start} to {time_end}
+        </div>
+    ''', unsafe_allow_html=True)
 
     # Filters
     col1, col2, col3, col4 = st.columns([2, 1, 1, 2])
@@ -151,18 +159,22 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     if type_filter != "All":
         filtered_df = filtered_df[filtered_df['Type'] == type_filter]
 
-    if time_preset == "Last 24h":
-        cutoff = datetime.now() - timedelta(hours=24)
-        filtered_df = filtered_df[filtered_df['Timestamp'] >= cutoff]
-    elif time_preset == "Last 7d":
-        cutoff = datetime.now() - timedelta(days=7)
-        filtered_df = filtered_df[filtered_df['Timestamp'] >= cutoff]
-    elif time_preset == "Last 30d":
-        cutoff = datetime.now() - timedelta(days=30)
-        filtered_df = filtered_df[filtered_df['Timestamp'] >= cutoff]
+    # Time filtering - use latest evidence timestamp as reference, not system time
+    if time_preset != "All Time" and time_range[1]:
+        reference_time = time_range[1]  # Latest timestamp in evidence
+        if time_preset == "Last 24h":
+            cutoff = reference_time - timedelta(hours=24)
+        elif time_preset == "Last 7d":
+            cutoff = reference_time - timedelta(days=7)
+        elif time_preset == "Last 30d":
+            cutoff = reference_time - timedelta(days=30)
+        else:
+            cutoff = None
+        if cutoff:
+            filtered_df = filtered_df[filtered_df['Timestamp'] >= cutoff]
 
     if show_risky:
-        filtered_df = filtered_df[filtered_df['Risky'] == True]
+        filtered_df = filtered_df[filtered_df['Risky']]
 
     if search_term:
         search_lower = search_term.lower()
@@ -219,7 +231,7 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
 
     # Tab 3: Flagged Events
     with tab_flagged:
-        risky_df = df[df['Risky'] == True]
+        risky_df = df[df['Risky']]
 
         if not risky_df.empty:
             st.markdown(f"**{len(risky_df)} flagged events** - These match suspicious patterns.")
@@ -255,7 +267,8 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
             csv_df.to_csv(index=False),
             "timeline.csv",
             "text/csv",
-            width="stretch"
+            width="stretch",
+            key="timeline_csv_export"
         )
 
     with col2:
@@ -266,5 +279,6 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
             json_data.to_json(orient='records', indent=2),
             "timeline.json",
             "application/json",
-            width="stretch"
+            width="stretch",
+            key="timeline_json_export"
         )

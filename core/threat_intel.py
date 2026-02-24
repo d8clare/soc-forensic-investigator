@@ -441,43 +441,115 @@ class ThreatIntelEngine:
         ]
         return any(re.match(p, ip) for p in private_patterns)
 
+    def _calculate_entropy(self, s: str) -> float:
+        """Calculate Shannon entropy of a string."""
+        import math
+        if not s:
+            return 0.0
+        prob = [float(s.count(c)) / len(s) for c in set(s)]
+        return -sum(p * math.log2(p) for p in prob if p > 0)
+
+    def _has_pronounceable_pattern(self, s: str) -> bool:
+        """Check if string has pronounceable patterns (consonant-vowel alternation)."""
+        vowels = set('aeiou')
+        s = s.lower()
+
+        # Count consonant-vowel transitions
+        transitions = 0
+        for i in range(len(s) - 1):
+            is_vowel_curr = s[i] in vowels
+            is_vowel_next = s[i + 1] in vowels
+            if is_vowel_curr != is_vowel_next:
+                transitions += 1
+
+        # Pronounceable words have higher transition ratios
+        if len(s) > 1:
+            return transitions / (len(s) - 1) > 0.4
+        return True
+
     def _looks_like_dga(self, domain: str) -> bool:
-        """Heuristic check for DGA domains."""
+        """
+        Improved heuristic check for DGA domains.
+        Uses entropy analysis, linguistic patterns, and multiple indicators.
+        """
         # Get the main domain part
         parts = domain.split('.')
         if len(parts) < 2:
             return False
 
-        main_part = parts[-2]
+        main_part = parts[-2].lower()
 
-        # DGA indicators:
-        # - Long random-looking strings
-        # - High consonant ratio
-        # - Few vowels
-
+        # Skip short domains - too many false positives
         if len(main_part) < 12:
             return False
 
+        # Skip if contains common word patterns (likely legitimate)
+        common_patterns = [
+            'www', 'mail', 'shop', 'store', 'cloud', 'data', 'web', 'app',
+            'online', 'service', 'tech', 'soft', 'corp', 'bank', 'secure',
+            'login', 'account', 'portal', 'admin', 'host', 'server', 'cdn'
+        ]
+        for pattern in common_patterns:
+            if pattern in main_part:
+                return False
+
+        # Skip numeric-heavy domains (often legitimate CDNs, APIs)
+        digit_count = sum(1 for c in main_part if c.isdigit())
+        if digit_count > len(main_part) * 0.3:
+            return False
+
+        # Calculate entropy
+        entropy = self._calculate_entropy(main_part)
+
+        # High entropy (>3.5) is suspicious for domain names
+        # Normal English words have entropy around 2.5-3.5
+        # Random strings have entropy around 4.0-4.5
+        high_entropy = entropy > 3.8
+
+        # Check vowel ratio
         vowels = set('aeiou')
+        vowel_count = sum(1 for c in main_part if c in vowels)
+        vowel_ratio = vowel_count / len(main_part) if main_part else 0
+
+        # Very low vowel ratio (< 0.15) is suspicious
+        low_vowels = vowel_ratio < 0.15
+
+        # Check for pronounceable patterns
+        not_pronounceable = not self._has_pronounceable_pattern(main_part)
+
+        # Check for consecutive consonants (unnatural in real words)
         consonants = set('bcdfghjklmnpqrstvwxyz')
+        max_consecutive = 0
+        current = 0
+        for c in main_part:
+            if c in consonants:
+                current += 1
+                max_consecutive = max(max_consecutive, current)
+            else:
+                current = 0
 
-        vowel_count = sum(1 for c in main_part.lower() if c in vowels)
-        consonant_count = sum(1 for c in main_part.lower() if c in consonants)
+        many_consecutive_consonants = max_consecutive >= 5
 
-        if consonant_count == 0:
-            return False
+        # Check character diversity - DGA often uses many unique chars
+        unique_ratio = len(set(main_part)) / len(main_part)
+        high_diversity = unique_ratio > 0.8 and len(main_part) > 15
 
-        vowel_ratio = vowel_count / len(main_part)
+        # Scoring: need multiple indicators to flag as DGA
+        dga_score = 0
+        if high_entropy:
+            dga_score += 2
+        if low_vowels:
+            dga_score += 2
+        if not_pronounceable:
+            dga_score += 1
+        if many_consecutive_consonants:
+            dga_score += 2
+        if high_diversity:
+            dga_score += 1
 
-        # DGA domains typically have low vowel ratio and high entropy
-        if vowel_ratio < 0.2 and len(main_part) > 15:
-            return True
-
-        # Check for repeating patterns (not DGA-like)
-        if len(set(main_part)) < len(main_part) / 3:
-            return False
-
-        return False
+        # Only flag if score is high enough (reduces false positives)
+        # Require at least 4 points (multiple strong indicators)
+        return dga_score >= 4
 
     def get_all_matches(self) -> List[ThreatIndicator]:
         """Get all threat matches."""

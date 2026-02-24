@@ -40,7 +40,7 @@ PS_SUSPICIOUS_PATTERNS = [
     (r'start-process', 'Process Execution'),
     (r'invoke-mimikatz', 'Credential Theft'),
     (r'get-credential', 'Credential Access'),
-    (r'converto-securestring', 'Secure String'),
+    (r'convertto-securestring', 'Secure String'),
     (r'add-type', 'Code Compilation'),
     (r'\[reflection\.assembly\]', 'Reflection Loading'),
 ]
@@ -66,7 +66,12 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     suspicious_count = exec_stats.get('suspicious', 0)
 
     # Simple header with blue styling
-    st.markdown(f'<div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;"><b>Execution</b> | Shimcache: {total_shimcache} | UserAssist: {total_ua} | Prefetch: {total_pf} | LNK: {total_lnk} | Suspicious: {suspicious_count}</div>', unsafe_allow_html=True)
+    st.markdown(f'''
+        <div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;">
+            <b>Execution</b> | Shimcache: {total_shimcache} | UserAssist: {total_ua} |
+            Prefetch: {total_pf} | LNK: {total_lnk} | Suspicious: {suspicious_count}
+        </div>
+    ''', unsafe_allow_html=True)
 
     # Create subtabs
     tab_shim, tab_ua, tab_pf, tab_lnk, tab_ps = st.tabs([
@@ -104,30 +109,30 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     with col1:
         if shimcache_data:
             df_export = pd.DataFrame(shimcache_data)
-            st.download_button("💾 Shimcache", df_export.to_csv(index=False), "shimcache.csv", "text/csv", key="shim_export")
+            st.download_button("💾 Shimcache", df_export.to_csv(index=False), "shimcache.csv", "text/csv", key="exec_shimcache_export")
         else:
-            st.button("💾 No Data", disabled=True, key="shim_export_disabled")
+            st.caption("💾 No Data")
 
     with col2:
         if ua_data:
             df_export = pd.DataFrame(ua_data)
-            st.download_button("👆 UserAssist", df_export.to_csv(index=False), "userassist.csv", "text/csv", key="ua_export")
+            st.download_button("👆 UserAssist", df_export.to_csv(index=False), "userassist.csv", "text/csv", key="exec_userassist_export")
         else:
-            st.button("👆 No Data", disabled=True, key="ua_export_disabled")
+            st.caption("👆 No Data")
 
     with col3:
         if pf_data:
             df_export = pd.DataFrame(pf_data)
-            st.download_button("🚀 Prefetch", df_export.to_csv(index=False), "prefetch.csv", "text/csv", key="pf_export")
+            st.download_button("🚀 Prefetch", df_export.to_csv(index=False), "prefetch.csv", "text/csv", key="exec_prefetch_export")
         else:
-            st.button("🚀 No Data", disabled=True, key="pf_export_disabled")
+            st.caption("🚀 No Data")
 
     with col4:
         if lnk_data:
             df_export = pd.DataFrame(lnk_data)
-            st.download_button("🔗 LNK Files", df_export.to_csv(index=False), "lnk_files.csv", "text/csv", key="lnk_export")
+            st.download_button("🔗 LNK Files", df_export.to_csv(index=False), "lnk_files.csv", "text/csv", key="exec_lnk_export")
         else:
-            st.button("🔗 No Data", disabled=True, key="lnk_export_disabled")
+            st.caption("🔗 No Data")
 
 
 @st.cache_data
@@ -405,8 +410,6 @@ def render_userassist_tab(ua_data, folder_name: str = ""):
 
 def render_prefetch_tab(pf_data, folder_name: str = ""):
     """Render the Prefetch Cache subtab."""
-
-
     if not pf_data:
         st.info("No Prefetch data available.")
         return
@@ -438,8 +441,11 @@ def render_prefetch_tab(pf_data, folder_name: str = ""):
     if risk_filter == "Suspicious Only":
         filtered_df = filtered_df[filtered_df['Risk'].str.contains("🔴|🟠", regex=True)]
     elif risk_filter == "Recent (Last 7d)" and 'LastRun' in filtered_df.columns:
-        cutoff = pd.Timestamp.now() - pd.Timedelta(days=7)
-        filtered_df = filtered_df[filtered_df['LastRun'] >= cutoff]
+        # Use latest timestamp in evidence as reference, not system time
+        latest_time = filtered_df['LastRun'].max()
+        if pd.notna(latest_time):
+            cutoff = latest_time - pd.Timedelta(days=7)
+            filtered_df = filtered_df[filtered_df['LastRun'] >= cutoff]
 
     df = filtered_df
 
@@ -503,8 +509,6 @@ def render_prefetch_tab(pf_data, folder_name: str = ""):
 
 def render_lnk_tab(lnk_data, folder_name: str = ""):
     """Render the LNK Files subtab."""
-
-
     if not lnk_data:
         st.info("No LNK file data available.")
         return
@@ -605,8 +609,6 @@ def render_lnk_tab(lnk_data, folder_name: str = ""):
 
 def render_powershell_tab(evidence_folder):
     """Render the PowerShell History subtab."""
-
-
     ps_dir = os.path.join(evidence_folder, "PowerShell_History")
 
     if not os.path.exists(ps_dir):
@@ -754,8 +756,6 @@ def render_powershell_tab(evidence_folder):
 
 def render_shimcache_tab(shimcache_data, folder_name: str = ""):
     """Render the Shimcache subtab."""
-
-
     if not shimcache_data:
         st.info("No Shimcache data available. This artifact provides execution evidence even for deleted programs.")
         return

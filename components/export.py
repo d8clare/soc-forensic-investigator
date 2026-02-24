@@ -367,7 +367,8 @@ class ForensicExporter:
                 label="Download HTML Report",
                 data=html_report,
                 file_name=f"forensic_report_{self.case_name}.html",
-                mime="text/html"
+                mime="text/html",
+                key="export_html_report"
             )
 
         with col2:
@@ -376,7 +377,8 @@ class ForensicExporter:
                 label="Download JSON Report",
                 data=json_report,
                 file_name=f"forensic_report_{self.case_name}.json",
-                mime="application/json"
+                mime="application/json",
+                key="export_json_report"
             )
 
 

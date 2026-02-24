@@ -76,7 +76,12 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     total_bits = len(bits_data) if bits_data else 0
 
     # Simple header with blue styling
-    st.markdown(f'<div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;"><b>Network</b> | Connections: {total_connections} | External: {external} | Suspicious: {suspicious} | BITS: {total_bits}</div>', unsafe_allow_html=True)
+    st.markdown(f'''
+        <div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;">
+            <b>Network</b> | Connections: {total_connections} | External: {external} |
+            Suspicious: {suspicious} | BITS: {total_bits}
+        </div>
+    ''', unsafe_allow_html=True)
 
     # Create subtabs
     net_tabs = st.tabs([
@@ -109,16 +114,16 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     with col1:
         if net_data:
             df_export = pd.DataFrame(net_data)
-            st.download_button("🔌 Export Connections", df_export.to_csv(index=False), "network_connections.csv", "text/csv", key="net_export")
+            st.download_button("🔌 Export Connections", df_export.to_csv(index=False), "network_connections.csv", "text/csv", key="net_conn_export")
         else:
-            st.button("🔌 No Connection Data", disabled=True, key="net_export_disabled")
+            st.caption("🔌 No Connection Data")
 
     with col2:
         if arp_data:
             raw = arp_data[0].get('raw_content', '') if arp_data else ''
-            st.download_button("📋 Export ARP Table", raw, "arp_table.txt", "text/plain", key="arp_export")
+            st.download_button("📋 Export ARP Table", raw, "arp_table.txt", "text/plain", key="net_arp_export")
         else:
-            st.button("📋 No ARP Data", disabled=True, key="arp_export_disabled")
+            st.caption("📋 No ARP Data")
 
 
 @st.cache_data
@@ -141,7 +146,7 @@ def analyze_network_stats(net_data, _folder_name: str = ""):
             port_str = raddr.split(':')[1] if len(raddr.split(':')) > 1 else '0'
             try:
                 port = int(port_str)
-            except:
+            except (ValueError, TypeError):
                 port = 0
 
             if not is_private_ip(ip) and ip not in ['', '0.0.0.0', '::', '*']:
@@ -170,12 +175,11 @@ def get_ip_type(ip):
     return "External"
 
 
-def render_connections_tab(net_data, proc_data, risk_engine):
-    """Render the Active Connections subtab."""
-
+@st.cache_data
+def get_analyzed_connections(net_data, proc_data, _folder_name: str = ""):
+    """Analyze all network connections and cache the result for fast filtering."""
     if not net_data:
-        st.info("No network connection data collected.")
-        return
+        return pd.DataFrame()
 
     df_net = pd.DataFrame(net_data)
 
@@ -186,73 +190,52 @@ def render_connections_tab(net_data, proc_data, risk_engine):
     else:
         df_net['Process'] = "Unknown"
 
-    # Filter Section
-    col_search, col_status, col_type = st.columns([2, 1.5, 1.5])
+    # Vectorized analysis for better performance
+    def analyze_connection(raddr):
+        try:
+            if not raddr or raddr in ['None', '']:
+                return ("⚪ No Remote", "N/A", "")
 
-    with col_search:
-        search_net = st.text_input("🔍 Search IP / Port / Process", placeholder="Enter keywords...", key="net_search")
-
-    with col_status:
-        statuses = ["All Status"]
-        if 'status' in df_net.columns:
-            statuses += df_net['status'].unique().tolist()
-        status_filter = st.selectbox("Connection Status", statuses, key="net_status_filter")
-
-    with col_type:
-        type_filter = st.selectbox("Connection Type", ["All Connections", "Suspicious Only", "External Only", "Internal Only"], key="net_type_filter")
-
-    # Enhanced risk and type analysis
-    def analyze_connection(row):
-        raddr = str(row.get('raddr', ''))
-        laddr = str(row.get('laddr', ''))
-
-        if not raddr or raddr in ['None', '']:
-            return "⚪ No Remote", "N/A", ""
-
-        # Parse remote address
-        if ':' in raddr:
-            parts = raddr.rsplit(':', 1)
-            ip = parts[0]
-            try:
-                port = int(parts[1])
-            except:
-                port = 0
-        else:
-            ip = raddr
-            port = 0
-
-        # Determine IP type
-        ip_type = get_ip_type(ip)
-
-        # Check for suspicious ports
-        if port in SUSPICIOUS_PORTS:
-            port_desc = SUSPICIOUS_PORTS[port]
-            if port in [4444, 5555, 6666, 6667, 1337, 31337, 12345, 27374]:
-                return f"🔴 C2/Backdoor", ip_type, port_desc
-            elif port in [3389, 5900, 5938]:
-                return f"🟠 Remote Access", ip_type, port_desc
-            elif port in [3333, 14444, 45700]:
-                return f"🔴 Crypto Mining", ip_type, port_desc
-            elif port in [9001, 9050, 9150]:
-                return f"🟠 Tor/Anonymizer", ip_type, port_desc
+            raddr = str(raddr)
+            # Parse remote address
+            if ':' in raddr:
+                parts = raddr.rsplit(':', 1)
+                ip = parts[0]
+                try:
+                    port = int(parts[1])
+                except (ValueError, TypeError):
+                    port = 0
             else:
-                return f"🟡 Notable Port", ip_type, port_desc
+                ip = raddr
+                port = 0
 
-        # Check base risk from engine
-        base_risk = risk_engine.assess_network(row)
-        if "High" in str(base_risk):
-            return "🔴 High Risk", ip_type, ""
-        if "Suspicious" in str(base_risk) or "RDP" in str(base_risk):
-            return "🟠 Suspicious", ip_type, ""
+            # Determine IP type
+            ip_type = get_ip_type(ip)
 
-        # External connections
-        if ip_type == "External":
-            return "🟡 External", ip_type, ""
+            # Check for suspicious ports
+            if port in SUSPICIOUS_PORTS:
+                port_desc = SUSPICIOUS_PORTS[port]
+                if port in [4444, 5555, 6666, 6667, 1337, 31337, 12345, 27374]:
+                    return ("🔴 C2/Backdoor", ip_type, port_desc)
+                elif port in [3389, 5900, 5938]:
+                    return ("🟠 Remote Access", ip_type, port_desc)
+                elif port in [3333, 14444, 45700]:
+                    return ("🔴 Crypto Mining", ip_type, port_desc)
+                elif port in [9001, 9050, 9150]:
+                    return ("🟠 Tor/Anonymizer", ip_type, port_desc)
+                else:
+                    return ("🟡 Notable Port", ip_type, port_desc)
 
-        return "✅ Normal", ip_type, ""
+            # External connections
+            if ip_type == "External":
+                return ("🟡 External", ip_type, "")
 
-    # Apply analysis
-    analysis_results = df_net.apply(analyze_connection, axis=1)
+            return ("✅ Normal", ip_type, "")
+        except Exception:
+            return ("⚪ Unknown", "N/A", "")
+
+    # Apply analysis to all connections (cached)
+    analysis_results = df_net['raddr'].apply(analyze_connection)
     df_net['Risk'] = [r[0] for r in analysis_results]
     df_net['Network'] = [r[1] for r in analysis_results]
     df_net['Port Info'] = [r[2] for r in analysis_results]
@@ -268,23 +251,66 @@ def render_connections_tab(net_data, proc_data, risk_engine):
     df_net['Remote IP'] = df_net['raddr'].apply(get_remote_ip)
     df_net['Intel'] = df_net['Remote IP'].apply(lambda x: create_abuseipdb_link(x) if x else "")
 
-    # Apply search filter
+    return df_net
+
+
+def render_connections_tab(net_data, proc_data, risk_engine):
+    """Render the Active Connections subtab."""
+
+    if not net_data:
+        st.info("No network connection data collected.")
+        return
+
+    # Get folder name for cache key
+    folder_name = st.session_state.get('evidence_folder', '')
+    if folder_name:
+        folder_name = os.path.basename(folder_name)
+
+    # Get pre-analyzed data from cache (fast!)
+    df_net = get_analyzed_connections(net_data, proc_data, folder_name)
+
+    if df_net.empty:
+        st.info("No network connection data collected.")
+        return
+
+    # Get unique statuses for filter dropdown
+    statuses = ["All Status"]
+    if 'status' in df_net.columns:
+        statuses += df_net['status'].unique().tolist()
+
+    # Filter Section
+    col_search, col_status, col_type = st.columns([2, 1.5, 1.5])
+
+    with col_search:
+        search_net = st.text_input("🔍 Search IP / Port / Process", placeholder="Enter keywords...", key="net_search")
+
+    with col_status:
+        status_filter = st.selectbox("Connection Status", statuses, key="net_status_filter")
+
+    with col_type:
+        type_filter = st.selectbox("Connection Type", ["All Connections", "Suspicious Only", "External Only", "Internal Only"], key="net_type_filter")
+
+    # Apply filters to PRE-ANALYZED cached data (fast filtering!)
+    if status_filter != "All Status" and 'status' in df_net.columns:
+        df_net = df_net[df_net['status'] == status_filter]
+
     if search_net:
         search_lower = search_net.lower()
         mask = df_net.astype(str).apply(lambda x: x.str.lower().str.contains(search_lower, na=False)).any(axis=1)
         df_net = df_net[mask]
 
-    # Apply status filter
-    if status_filter != "All Status" and 'status' in df_net.columns:
-        df_net = df_net[df_net['status'] == status_filter]
+    # If no data after filtering, show message and return early
+    if df_net.empty:
+        st.info("No connections match the selected filters.")
+        return
 
-    # Apply type filter
+    # Apply type filter (after analysis since it depends on Risk/Network columns)
     if type_filter == "Suspicious Only":
         df_net = df_net[df_net['Risk'].str.contains("🔴|🟠", regex=True)]
     elif type_filter == "External Only":
         df_net = df_net[df_net['Network'] == "External"]
     elif type_filter == "Internal Only":
-        df_net = df_net[df_net['Network'].str.contains("Private|Loopback|Link-Local", regex=True)]
+        df_net = df_net[df_net['Network'].str.contains("Private|Loopback|Link-Local", regex=True, na=False)]
 
     # Sort by risk
     risk_order = {"🔴": 0, "🟠": 1, "🟡": 2, "✅": 3, "⚪": 4}
@@ -608,7 +634,7 @@ def render_bits_tab(bits_data):
             elif b >= 1024:
                 return f"{b/1024:.1f} KB"
             return f"{b} B"
-        except:
+        except (ValueError, TypeError):
             return ""
 
     # Add formatted progress column if byte info available

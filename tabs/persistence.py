@@ -59,7 +59,11 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     total_items = len(reg_data or []) + len(tasks_data or []) + len(services_data or []) + len(wmi_data or []) + len(startup_data or [])
 
     # Simple header with blue styling
-    st.markdown(f'<div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;"><b>Persistence</b> | Total: {total_items} | Critical: {critical_count} | Suspicious: {high_count}</div>', unsafe_allow_html=True)
+    st.markdown(f'''
+        <div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;">
+            <b>Persistence</b> | Total: {total_items} | Critical: {critical_count} | Suspicious: {high_count}
+        </div>
+    ''', unsafe_allow_html=True)
 
     # Create subtabs
     p_tabs = st.tabs([
@@ -98,37 +102,37 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     with col1:
         if reg_data:
             df_export = pd.DataFrame(reg_data)
-            st.download_button("📋 Registry", df_export.to_csv(index=False), "registry_autoruns.csv", "text/csv", key="persist_reg")
+            st.download_button("📋 Registry", df_export.to_csv(index=False), "registry_autoruns.csv", "text/csv", key="persist_reg_export")
         else:
-            st.button("📋 No Data", disabled=True, key="persist_reg_disabled")
+            st.caption("📋 No Data")
 
     with col2:
         if tasks_data:
             df_export = pd.DataFrame(tasks_data)
-            st.download_button("⏰ Tasks", df_export.to_csv(index=False), "scheduled_tasks.csv", "text/csv", key="persist_tasks")
+            st.download_button("⏰ Tasks", df_export.to_csv(index=False), "scheduled_tasks.csv", "text/csv", key="persist_tasks_export")
         else:
-            st.button("⏰ No Data", disabled=True, key="persist_tasks_disabled")
+            st.caption("⏰ No Data")
 
     with col3:
         if services_data:
             df_export = pd.DataFrame(services_data)
-            st.download_button("⚙️ Services", df_export.to_csv(index=False), "services.csv", "text/csv", key="persist_services")
+            st.download_button("⚙️ Services", df_export.to_csv(index=False), "services.csv", "text/csv", key="persist_services_export")
         else:
-            st.button("⚙️ No Data", disabled=True, key="persist_services_disabled")
+            st.caption("⚙️ No Data")
 
     with col4:
         if wmi_data:
             df_export = pd.DataFrame(wmi_data)
-            st.download_button("🔗 WMI", df_export.to_csv(index=False), "wmi_persistence.csv", "text/csv", key="persist_wmi")
+            st.download_button("🔗 WMI", df_export.to_csv(index=False), "wmi_persistence.csv", "text/csv", key="persist_wmi_export")
         else:
-            st.button("🔗 No Data", disabled=True, key="persist_wmi_disabled")
+            st.caption("🔗 No Data")
 
     with col5:
         if startup_data:
             df_export = pd.DataFrame(startup_data)
-            st.download_button("📂 Startup", df_export.to_csv(index=False), "startup_files.csv", "text/csv", key="persist_startup")
+            st.download_button("📂 Startup", df_export.to_csv(index=False), "startup_files.csv", "text/csv", key="persist_startup_export")
         else:
-            st.button("📂 No Data", disabled=True, key="persist_startup_disabled")
+            st.caption("📂 No Data")
 
 
 @st.cache_data
@@ -266,6 +270,16 @@ def get_services_df_with_risk(services_data, _folder_name: str = ""):
     return df
 
 
+# Windows Task Scheduler state codes mapping
+TASK_STATE_MAP = {
+    0: "Unknown",
+    1: "Disabled",
+    2: "Queued",
+    3: "Ready",
+    4: "Running"
+}
+
+
 @st.cache_data
 def get_tasks_df_with_risk(tasks_data, _folder_name: str = ""):
     """Create and cache tasks DataFrame with risk analysis applied."""
@@ -273,6 +287,12 @@ def get_tasks_df_with_risk(tasks_data, _folder_name: str = ""):
         return pd.DataFrame()
 
     df = pd.DataFrame(tasks_data)
+
+    # Convert numeric state codes to readable names
+    if 'State' in df.columns:
+        df['State'] = df['State'].apply(
+            lambda x: TASK_STATE_MAP.get(x, str(x)) if isinstance(x, (int, float)) else str(x)
+        )
 
     critical_indicators = ['powershell', 'cmd.exe', 'bitsadmin', 'mshta', 'wscript', 'cscript', 'certutil', 'regsvr32']
     suspicious_indicators = ['.ps1', '.bat', '.vbs', 'temp', 'appdata', 'programdata']
@@ -435,7 +455,7 @@ def get_startup_df_with_risk(startup_data, _folder_name: str = ""):
             elif size >= 1024:
                 return f"{size/1024:.1f} KB"
             return f"{size} B"
-        except:
+        except (ValueError, TypeError):
             return "N/A"
 
     if 'Size' in df.columns:

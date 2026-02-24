@@ -328,7 +328,7 @@ def render_manifest_tab(df: pd.DataFrame, evidence_folder: str):
 
         col1, col2 = st.columns(2)
         with col1:
-            st.download_button("Download TXT", manifest_text, f"manifest_{case_number}.txt", "text/plain")
+            st.download_button("Download TXT", manifest_text, f"manifest_{case_number}.txt", "text/plain", key="integrity_manifest_txt")
         with col2:
             import json
             manifest_json = {
@@ -336,7 +336,7 @@ def render_manifest_tab(df: pd.DataFrame, evidence_folder: str):
                 "collection_date": str(collection_date), "generated": datetime.now().isoformat(),
                 "evidence_source": evidence_folder, "total_files": len(df), "files": df.to_dict('records')
             }
-            st.download_button("Download JSON", json.dumps(manifest_json, indent=2), f"manifest_{case_number}.json", "application/json")
+            st.download_button("Download JSON", json.dumps(manifest_json, indent=2), f"manifest_{case_number}.json", "application/json", key="integrity_manifest_json")
 
 
 def render_registry_hives_tab(registry_hives: list, hives_dir: str):

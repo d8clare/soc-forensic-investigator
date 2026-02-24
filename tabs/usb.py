@@ -75,23 +75,23 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
     with col1:
         if usb_reg:
             df_export = pd.DataFrame(usb_reg)
-            st.download_button("📋 Export Registry", df_export.to_csv(index=False), "usb_registry.csv", "text/csv", key="usb_reg_export")
+            st.download_button("📋 Export Registry", df_export.to_csv(index=False), "usb_registry.csv", "text/csv", key="usb_registry_export")
         else:
-            st.button("📋 No Registry Data", disabled=True, key="usb_reg_export_disabled")
+            st.caption("📋 No Registry Data")
 
     with col2:
         if usb_evt:
             df_export = pd.DataFrame(usb_evt)
-            st.download_button("⏱️ Export Events", df_export.to_csv(index=False), "usb_events.csv", "text/csv", key="usb_evt_export")
+            st.download_button("⏱️ Export Events", df_export.to_csv(index=False), "usb_events.csv", "text/csv", key="usb_events_export")
         else:
-            st.button("⏱️ No Events Data", disabled=True, key="usb_evt_export_disabled")
+            st.caption("⏱️ No Events Data")
 
     with col3:
         if usb_deep:
             df_export = pd.DataFrame(usb_deep)
-            st.download_button("📜 Export SetupAPI", df_export.to_csv(index=False), "usb_setupapi.csv", "text/csv", key="usb_setup_export")
+            st.download_button("📜 Export SetupAPI", df_export.to_csv(index=False), "usb_setupapi.csv", "text/csv", key="usb_setupapi_export")
         else:
-            st.button("📜 No SetupAPI Data", disabled=True, key="usb_setup_export_disabled")
+            st.caption("📜 No SetupAPI Data")
 
 
 def analyze_usb_stats(usb_reg, usb_evt, usb_deep):

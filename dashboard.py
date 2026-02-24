@@ -29,6 +29,8 @@ from core.evidence_cache import load_all_evidence, get_evidence
 from core.sigma_engine import SigmaEngine, YAML_AVAILABLE
 from core.threat_intel import ThreatIntelEngine
 from core.yara_engine import YaraEngine, YARA_AVAILABLE
+from core.evidence_integrity import EvidenceIntegrity, initialize_integrity, verify_integrity
+from core.audit_trail import init_audit_trail, get_audit_trail
 from tabs import home, findings, timeline, processes, network, persistence, execution, files, usb, logs, software, browser, mitre, integrity, search
 
 # Page configuration
@@ -245,7 +247,8 @@ if len(cases) > 1:
                 range(len(case_options)),
                 index=st.session_state.selected_case_idx,
                 format_func=lambda i: case_options[i],
-                label_visibility="collapsed"
+                label_visibility="collapsed",
+                key="case_selector_radio"
             )
         if selected_idx != st.session_state.selected_case_idx:
             st.session_state.selected_case_idx = selected_idx
@@ -271,12 +274,33 @@ risk_engine = RiskEngine(
     whitelist_path if os.path.exists(whitelist_path) else None
 )
 
+# Initialize audit trail (persistent logging)
+if 'audit_trail' not in st.session_state:
+    analyst_id = st.session_state.get('analyst_id', 'analyst')
+    st.session_state.audit_trail = init_audit_trail(analyst_id=analyst_id)
+
 # Preload all evidence data into session state cache (runs once per folder selection)
 with st.spinner("Loading evidence data..."):
     evidence_data = load_all_evidence(selected_folder)
 
+    # Initialize and verify evidence integrity
+    if 'evidence_integrity' not in st.session_state or st.session_state.get('current_folder') != selected_folder:
+        integrity = initialize_integrity(selected_folder, st.session_state.get('analyst_id', 'analyst'))
+        st.session_state.evidence_integrity = integrity
+        st.session_state.current_folder = selected_folder
+
+        # Log evidence access in audit trail
+        audit = get_audit_trail()
+        audit.log_evidence_access(selected_folder, list(evidence_data.keys()) if evidence_data else [])
+
+        # Verify integrity and warn if compromised
+        is_valid, summary = verify_integrity(selected_folder)
+        st.session_state.integrity_status = summary
+        if not is_valid:
+            st.warning(f"Evidence integrity check: {summary.get('integrity_violations', 0)} file(s) may have been modified!")
+
 # Sigma rules path and engine (defined at module level)
-SIGMA_RULES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "sigma_rules")
+SIGMA_RULES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rules", "sigma")
 YARA_RULES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rules", "yara")
 ANALYSIS_VERSION = "2.6.0"  # Increment to invalidate cache when detection logic changes
 
@@ -512,6 +536,14 @@ with st.spinner("Analyzing evidence..."):
 risk_engine.all_findings = analysis['findings']
 risk_engine.mitre_techniques = set(analysis['techniques'])
 risk_engine._category_scores = analysis.get('category_scores', {})
+
+# Log findings generation in audit trail (only once per analysis)
+if 'findings_logged' not in st.session_state or st.session_state.get('findings_folder') != selected_folder:
+    audit = get_audit_trail()
+    critical_count = len([f for f in analysis['findings'] if f.severity == 'critical'])
+    audit.log_finding_generated(len(analysis['findings']), critical_count, selected_folder)
+    st.session_state.findings_logged = True
+    st.session_state.findings_folder = selected_folder
 
 # Store detection engine stats in session state for display in tabs
 st.session_state.sigma_stats = analysis.get('sigma_stats', {})

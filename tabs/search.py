@@ -2,9 +2,11 @@
 Global Search & Pivot Tab.
 Search across ALL artifacts and pivot on indicators.
 """
+import os
 import streamlit as st
 import pandas as pd
 import json
+import re
 from typing import List, Dict
 
 from core.risk_engine import RiskEngine
@@ -45,8 +47,13 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
 
     init_quick_actions_state()
 
-    folder_name = evidence_folder.split("\\")[-1] if "\\" in evidence_folder else evidence_folder.split("/")[-1]
-    case_info = {"hostname": folder_name.replace("Evidence_", "").split("_")[0], "date_str": ""}
+    folder_name = os.path.basename(evidence_folder) or "case"
+    # Extract hostname and date from folder name (e.g., "Evidence_HOSTNAME_20260223_143052")
+    hostname = folder_name.replace("Evidence_", "").split("_")[0] if folder_name else "Unknown"
+    # Try to extract date string (format: YYYYMMDD)
+    date_match = re.search(r'(\d{8})(?:_\d+)?$', folder_name)
+    date_str = date_match.group(1) if date_match else ""
+    case_info = {"hostname": hostname, "date_str": date_str}
 
     subtabs = st.tabs(["Search", "Pivot", "Notes", "Export"])
 
@@ -83,7 +90,7 @@ def render_search_mode(evidence_folder: str, risk_engine: RiskEngine):
 
     # Search options
     with st.expander("Search Options", expanded=False):
-        max_results = st.slider("Max Results", 10, 500, 100)
+        max_results = st.slider("Max Results", 10, 500, 100, key="search_max_results")
 
     if not search_term:
         st.info("Enter a search term to search across all artifacts.")
@@ -192,7 +199,8 @@ def display_search_results(all_results: List[Dict], search_term: str, max_result
                 json.dumps(export_data, indent=2, default=str),
                 f"search_{search_term[:20]}.json",
                 "application/json",
-                width="stretch"
+                width="stretch",
+                key="search_results_json_export"
             )
         with col2:
             csv_rows = [{"source": r["source"], "matched": r["matched_fields"], "data": json.dumps(r["data"], default=str)[:500]} for r in all_results[:max_results]]
@@ -201,7 +209,8 @@ def display_search_results(all_results: List[Dict], search_term: str, max_result
                 pd.DataFrame(csv_rows).to_csv(index=False),
                 f"search_{search_term[:20]}.csv",
                 "text/csv",
-                width="stretch"
+                width="stretch",
+                key="search_results_csv_export"
             )
     else:
         st.warning(f"No results found for '{search_term}'")
@@ -238,8 +247,8 @@ def render_pivot_mode(evidence_folder: str):
             st.warning(f"No matches found for '{pivot_indicator}'")
             return
 
-    # Display cached pivot results
-    if 'pivot_results' in st.session_state and st.session_state.get('pivot_term'):
+    # Display cached pivot results (only if current input matches stored term)
+    if 'pivot_results' in st.session_state and st.session_state.get('pivot_term') == pivot_indicator:
         context = st.session_state.pivot_results
         render_pivot_results(context)
     elif not pivot_indicator:

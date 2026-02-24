@@ -46,10 +46,11 @@
       "mitre_techniques": ["T1003", "T1059"]
     },
     "encoded_commands": {
-      "patterns": ["-enc", "-encodedcommand", "frombase64", "iex(", "invoke-expression", "downloadstring", "net.webclient", "bitstransfer", "invoke-webrequest", "certutil -decode", "certutil -urlcache"],
+      "patterns": ["-encodedcommand", "-e JAB", "-enc JAB", "frombase64string", "[convert]::frombase64", "iex(new-object", "invoke-expression(new-object", "(new-object net.webclient).downloadstring", "start-bitstransfer -source http", "certutil -decode", "certutil -urlcache -split -f http"],
       "score": 45,
       "severity": "high",
-      "mitre_techniques": ["T1059.001", "T1027"]
+      "mitre_techniques": ["T1059.001", "T1027"],
+      "note": "More specific patterns to reduce FPs from legitimate admin scripts"
     },
     "office_spawn_shell": {
       "parent_patterns": ["winword", "excel", "outlook", "powerpnt", "onenote", "msaccess", "mspub"],
@@ -64,11 +65,22 @@
       "severity": "high",
       "mitre_techniques": ["T1036", "T1574"]
     },
-    "lolbins": {
-      "patterns": ["mshta", "regsvr32", "rundll32", "certutil", "bitsadmin", "wmic", "msiexec", "cmstp", "installutil", "regasm", "regsvcs", "msbuild", "odbcconf", "ieexec", "pcalua", "forfiles", "scriptrunner"],
-      "score": 35,
+    "lolbins_suspicious_usage": {
+      "patterns": [
+        "mshta vbscript:", "mshta javascript:", "mshta http://", "mshta https://",
+        "regsvr32 /s /n /u /i:", "regsvr32 /s /n /i:http",
+        "certutil -urlcache", "certutil -decode", "certutil -encode",
+        "bitsadmin /transfer", "bitsadmin /create",
+        "wmic process call create", "wmic /node:",
+        "msiexec /q /i http", "msiexec /q /i \\\\",
+        "cmstp /s /ns",
+        "forfiles /p c:\\windows /m notepad.exe /c",
+        "pcalua -a"
+      ],
+      "score": 40,
       "severity": "high",
-      "mitre_techniques": ["T1218", "T1105"]
+      "mitre_techniques": ["T1218", "T1105"],
+      "note": "LOLBins with suspicious arguments only - binary name alone is not flagged"
     },
     "credential_access": {
       "patterns": ["sekurlsa", "lsadump", "dcsync", "kerberos::", "procdump", "comsvcs.dll", "minidump", "sqldumper", "createdump", "ntdsutil"],
@@ -171,10 +183,11 @@
       "mitre_techniques": ["T1021.006"]
     },
     "common_c2_ports": {
-      "ports": [443, 80, 8080, 8443],
-      "score": 5,
-      "severity": "low",
-      "mitre_techniques": ["T1071.001"]
+      "ports": [8080, 8443],
+      "score": 0,
+      "severity": "info",
+      "mitre_techniques": ["T1071.001"],
+      "note": "Disabled - ports 80/443 cause too many false positives"
     },
     "tor_ports": {
       "ports": [9050, 9051, 9150],
@@ -509,7 +522,7 @@
   },
   "registry_rules": {
     "script_commands": {
-      "patterns": ["powershell", "-enc", "mshta", "cmd /c", "bitsadmin", "http://", "https://", "wscript", "cscript", "regsvr32", "rundll32"],
+      "patterns": ["powershell -enc", "powershell -e ", "mshta vbscript:", "mshta javascript:", "cmd /c powershell", "bitsadmin /transfer", "wscript //e:", "cscript //e:", "regsvr32 /s /n /u", "rundll32 javascript:"],
       "score": 45,
       "severity": "high",
       "mitre_techniques": ["T1547.001", "T1059"]

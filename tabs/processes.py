@@ -2,10 +2,12 @@
 Process Intelligence Tab.
 Displays process information with risk scoring, deep dive analysis, and process tree.
 """
+import json
 import os
+import re
+
 import streamlit as st
 import pandas as pd
-import re
 
 from core.data_loader import load_json, sanitize_dataframe
 from core.evidence_cache import get_evidence
@@ -416,7 +418,12 @@ def render(evidence_folder: str, risk_engine: RiskEngine):
         df_proc['VirusTotal'] = df_proc['sha256'].apply(create_virustotal_link)
 
     # Simple header with blue styling
-    st.markdown(f'<div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;"><b>Processes</b> | Total: {stats["total"]:,} | Critical: {stats["critical"]} | High: {stats["high"]} | Unsigned: {stats["unsigned"]} | Users: {stats["unique_users"]}</div>', unsafe_allow_html=True)
+    st.markdown(f'''
+        <div style="color:#e6edf3;font-size:1.1rem;margin-bottom:15px;">
+            <b>Processes</b> | Total: {stats["total"]:,} | Critical: {stats["critical"]} |
+            High: {stats["high"]} | Unsigned: {stats["unsigned"]} | Users: {stats["unique_users"]}
+        </div>
+    ''', unsafe_allow_html=True)
 
     # Create subtabs
     p_sub_tabs = st.tabs(["Process Table", "Process Tree", "Deep Dive", "Suspicious"])
@@ -507,11 +514,11 @@ def render_process_table(df_proc_sorted: pd.DataFrame):
         st.caption(f"Showing {len(df_display):,} processes")
     with col2:
         csv = df_display.to_csv(index=False)
-        st.download_button("📥 Export Filtered", csv, "processes_filtered.csv", "text/csv")
+        st.download_button("📥 Export Filtered", csv, "processes_filtered.csv", "text/csv", key="proc_filtered_export")
     with col3:
         if not critical.empty:
             crit_csv = critical.to_csv(index=False)
-            st.download_button("🚨 Export High-Risk", crit_csv, "high_risk_processes.csv", "text/csv")
+            st.download_button("🚨 Export High-Risk", crit_csv, "high_risk_processes.csv", "text/csv", key="proc_highrisk_export")
 
 
 def render_process_tree(df_proc: pd.DataFrame, df_proc_sorted: pd.DataFrame):
@@ -701,7 +708,8 @@ def render_deep_dive(df_proc: pd.DataFrame, df_proc_sorted: pd.DataFrame, eviden
         st.markdown("### Security Status")
         sig_status = details.get('SignatureStatus', 'Unknown')
         sig_color = "#00cc66" if sig_status == "Valid" else "#ff4444"
-        st.markdown(f"**Signature:** <span style='color:{sig_color}; font-weight: bold;'>{sig_status}</span>",
+        safe_sig_status = escape_html(str(sig_status))
+        st.markdown(f"**Signature:** <span style='color:{sig_color}; font-weight: bold;'>{safe_sig_status}</span>",
                     unsafe_allow_html=True)
         st.markdown(f"**Publisher:** `{details.get('Publisher', 'Unknown')}`")
         st.markdown(f"**Start Time:** `{details.get('create_time', 'Unknown')}`")
@@ -727,12 +735,18 @@ def render_deep_dive(df_proc: pd.DataFrame, df_proc_sorted: pd.DataFrame, eviden
 
                         if result:
                             det_color = "#28a745" if not result.detected else "#ff6b6b"
+                            # Escape malware names for safe HTML rendering
+                            malware_html = ""
+                            if result.malware_names:
+                                safe_names = [escape_html(name) for name in result.malware_names[:3]]
+                                malware_html = f"<div style='color:#ff6b6b;margin-top:10px;font-size:0.85rem;'>Detected as: {', '.join(safe_names)}</div>"
+                            safe_ratio = escape_html(str(result.detection_ratio))
                             st.markdown(f'''<div style="background:#1e1e2e;border-radius:8px;padding:15px;margin-top:10px;">
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <div style="font-weight:bold;color:white;">VirusTotal Result</div>
-<div style="background:{det_color};color:white;padding:3px 12px;border-radius:15px;font-size:0.85rem;">{result.detection_ratio}</div>
+<div style="background:{det_color};color:white;padding:3px 12px;border-radius:15px;font-size:0.85rem;">{safe_ratio}</div>
 </div>
-{"<div style='color:#ff6b6b;margin-top:10px;font-size:0.85rem;'>Detected as: " + ", ".join(result.malware_names[:3]) + "</div>" if result.malware_names else ""}
+{malware_html}
 </div>''', unsafe_allow_html=True)
                         else:
                             st.info("File not found in VirusTotal database")
@@ -906,7 +920,15 @@ def render_suspicious_activity(df_proc: pd.DataFrame):
                 })
 
     if suspicious_chains:
-        st.error(f"Found {len(suspicious_chains)} suspicious process chain(s) - check table above for details.")
+        st.error(f"Found {len(suspicious_chains)} suspicious process chain(s)!")
+        st.dataframe(
+            pd.DataFrame(suspicious_chains),
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Command": st.column_config.TextColumn("Command", width="large"),
+            }
+        )
     else:
         st.success("No suspicious process chains detected.")
 
@@ -961,10 +983,10 @@ def render_suspicious_activity(df_proc: pd.DataFrame):
             "lolbins": lolbins_found,
             "unsigned_count": len(unsigned)
         }
-        import json
         st.download_button(
             "📥 Export Suspicious Findings",
             json.dumps(findings, indent=2, default=str),
             "suspicious_processes.json",
-            "application/json"
+            "application/json",
+            key="proc_suspicious_export"
         )

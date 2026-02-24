@@ -466,7 +466,8 @@ def render_export_panel(evidence_folder: str, risk_engine: RiskEngine, case_info
             html_report,
             f"soc_report_{hostname}_{timestamp}.html",
             "text/html",
-            width="stretch"
+            width="stretch",
+            key="report_html_export"
         )
 
     with col2:
@@ -476,7 +477,8 @@ def render_export_panel(evidence_folder: str, risk_engine: RiskEngine, case_info
             json_report,
             f"soc_report_{hostname}_{timestamp}.json",
             "application/json",
-            width="stretch"
+            width="stretch",
+            key="report_json_export"
         )
 
     with col3:
@@ -491,11 +493,11 @@ def render_export_panel(evidence_folder: str, risk_engine: RiskEngine, case_info
                 "\n".join(all_iocs),
                 f"iocs_{hostname}_{timestamp}.txt",
                 "text/plain",
-                width="stretch"
+                width="stretch",
+                key="report_ioc_export"
             )
         else:
-            st.button("📌 Export IOC List", disabled=True, width="stretch",
-                      help="Flag indicators or add IOCs first")
+            st.caption("📌 No IOCs to export")
 
     # Preview
     with st.expander("👁️ Preview HTML Report", expanded=False):
